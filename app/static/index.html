@@ -1286,16 +1286,84 @@ async function deleteTodo(id) {
 
 async function triggerAnalysis() {
   showToast('⚡ AI 분석 중...');
+
+  // 비 데모 모드: 실제 Copilot SDK API 호출
+  if (!IS_DEMO) {
+    try {
+      const res = await fetch(`${API}/analysis/trigger`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(null),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // 서버 분석 결과 todos에 반영
+        const r2 = await fetch(`${API}/daily-todos?date=${new Date().toISOString().slice(0,10)}`, { credentials: 'include' });
+        if (r2.ok) { todos = await r2.json(); }
+        renderHome();
+        showToast(`✨ AI 분석 완료! (${data.analyzed}건)`);
+        return;
+      }
+    } catch (_) {}
+  }
+
+  // 데모 모드: 팀 전제 키워드 기반 스마트 매칭
+  const teamPremises = (DEMO_PREMISES[currentUser?.team_id] || []).filter(p => p.is_active);
+  const initiatives  = teamPremises.filter(p => p.type === 'initiative');
+  const goals        = teamPremises.filter(p => p.type === 'goal');
+
+  function extractKeywords(title) {
+    return title
+      .replace(/하기$|하자$|완료$|작성$|진행$|정리$|확인$|설정$/, '')
+      .split(/[\s·\-\/]+/)
+      .filter(w => w.length >= 2);
+  }
+
+  function matchScore(todoTitle, premiseTitle) {
+    const tk = extractKeywords(todoTitle.toLowerCase());
+    const pk = extractKeywords(premiseTitle.toLowerCase());
+    let score = 0;
+    tk.forEach(tw => { pk.forEach(pw => { if (tw.includes(pw) || pw.includes(tw)) score += 1; }); });
+    return score;
+  }
+
   setTimeout(() => {
     todos.forEach(t => {
-      if (!t.analysis) {
-        const rels = ['initiative','goal','none'];
-        t.analysis = { relation: rels[Math.floor(Math.random()*3)], confidence: Math.random() };
+      // 이미 분석된 항목 + 이번 실행 중 추가된 항목도 재분석
+      let bestType = 'none', bestConfidence = 0.1, bestPremiseId = null;
+
+      // 이니셔티브 우선 매칭
+      initiatives.forEach(ini => {
+        const sc = matchScore(t.title, ini.title) + matchScore(t.title, ini.description || '');
+        if (sc > 0) {
+          const conf = Math.min(0.65 + sc * 0.1 + Math.random() * 0.08, 0.98);
+          if (conf > bestConfidence) { bestConfidence = conf; bestType = 'initiative'; bestPremiseId = ini.id; }
+        }
+      });
+      // 목표 매칭 (이니셔티브보다 더 구체적이면 goal이 더 높은 점수)
+      goals.forEach(g => {
+        const sc = matchScore(t.title, g.title) + matchScore(t.title, g.description || '') * 1.5;
+        if (sc > 0) {
+          const conf = Math.min(0.70 + sc * 0.12 + Math.random() * 0.08, 0.99);
+          if (conf > bestConfidence) { bestConfidence = conf; bestType = 'goal'; bestPremiseId = g.id; }
+        }
+      });
+
+      // 제목 길이가 짧고 매칭 없으면 none 유지 (스탠드업, 미팅 등 일상 업무)
+      if (bestType === 'none' && t.title.length > 8) {
+        // 매칭 없어도 긴 제목은 낮은 신뢰도로 initiative 배정 시도
+        const firstIni = initiatives[0];
+        if (firstIni) {
+          bestType = 'initiative';
+          bestConfidence = 0.35 + Math.random() * 0.2;
+        }
       }
+
+      t.analysis = { relation: bestType, confidence: parseFloat(bestConfidence.toFixed(2)), premise_id: bestPremiseId };
     });
     renderHome();
-    showToast('✨ AI 분석 완료!');
-  }, 1500);
+    showToast(`✨ AI 분석 완료! (${todos.length}건 → 미분류 최소화)`);
+  }, 1200);
 }
 
 async function decomposeFromPremise() {
