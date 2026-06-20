@@ -155,9 +155,6 @@ const GROUP_COLOR = {
 const COLOR     = Object.fromEntries(Object.entries(GROUP_COLOR).map(([k,v])=>[k,v.main]));
 const COLOR_HEX = Object.fromEntries(Object.entries(GROUP_COLOR).map(([k,v])=>[k,v.hex]));
 
-const COLOR = { me:0xff5500, team:0x4d9eff, other:0x9b59ff, premise:0x00e5a0 };
-const COLOR_HEX_ORIG = COLOR_HEX; // alias
-
 // ── Three.js 셋업 ────────────────────────────────────────────────────────
 const W = window.innerWidth, H = window.innerHeight;
 const scene = new THREE.Scene();
