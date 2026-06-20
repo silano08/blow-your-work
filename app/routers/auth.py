@@ -47,6 +47,11 @@ async def get_current_user(
 
 # ── Routes ────────────────────────────────────────────────────────────────
 
+CALLBACK_URL = os.getenv(
+    "GITHUB_CALLBACK_URL",
+    "http://byw-teamflow.eastasia.azurecontainer.io/auth/github/callback"
+)
+
 @router.get("/github")
 async def github_login():
     """Redirect to GitHub OAuth."""
@@ -56,6 +61,7 @@ async def github_login():
     url = (
         f"https://github.com/login/oauth/authorize"
         f"?client_id={GITHUB_CLIENT_ID}"
+        f"&redirect_uri={CALLBACK_URL}"
         f"&scope=read:user"
         f"&state={state}"
     )
@@ -63,6 +69,7 @@ async def github_login():
 
 
 @router.get("/callback")
+@router.get("/github/callback")
 async def github_callback(
     code: str,
     db: aiosqlite.Connection = Depends(get_db),
