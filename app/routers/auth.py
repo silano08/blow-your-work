@@ -61,7 +61,6 @@ async def github_login():
     url = (
         f"https://github.com/login/oauth/authorize"
         f"?client_id={GITHUB_CLIENT_ID}"
-        f"&redirect_uri={CALLBACK_URL}"
         f"&scope=read:user"
         f"&state={state}"
     )
