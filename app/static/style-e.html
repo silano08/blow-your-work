@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>후보 E — 수직 트리 + 진척도</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F6F6F9;font-family:'Pretendard',-apple-system,sans-serif;height:100vh;overflow:hidden;letter-spacing:-0.02em;color:#151515}
+#header{height:52px;background:#fff;border-bottom:1px solid #E5E5E8;display:flex;align-items:center;padding:0 20px;gap:14px;position:fixed;top:0;left:0;right:0;z-index:10}
+#header h1{font-size:14px;font-weight:700;color:#F85100;letter-spacing:-0.03em}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#888}
+.ld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+#canvas-wrap{position:fixed;top:52px;left:0;right:300px;bottom:0;overflow:auto}
+#canvas{position:relative;min-height:100%}
+/* 오른쪽 패널 */
+#side{position:fixed;top:52px;right:0;bottom:0;width:300px;background:#fff;border-left:1px solid #E5E5E8;overflow-y:auto}
+#side-inner{padding:20px}
+#side h2{font-size:15px;font-weight:700;margin-bottom:4px;letter-spacing:-0.03em}
+#side .s-sub{font-size:12px;color:#888;margin-bottom:16px}
+.s-prog-wrap{margin-bottom:16px}
+.s-prog-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.s-prog-bar{height:4px;background:#E5E5E8;border-radius:9999px;overflow:hidden}
+.s-prog-fill{height:100%;background:#FF6114;border-radius:9999px;transition:width .5s}
+.s-sec{font-size:10px;font-weight:700;color:#B0B0B3;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px}
+.s-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F6F6F9;border-radius:8px;margin-bottom:4px;cursor:pointer;font-size:12px}
+.s-item:hover{background:#FFEFE7}
+.s-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.s-done{color:#1A9F46;font-size:11px;font-weight:600}
+.s-doing{color:#FF6114;font-size:11px;font-weight:600}
+#side-empty{padding:40px 20px;text-align:center;color:#B0B0B3;font-size:13px}
+
+/* 트리 레이아웃 */
+.row{display:flex;gap:12px;padding:0 20px;margin-bottom:0;align-items:flex-start}
+.row.r-init{padding-top:24px}
+.row.r-goal{padding-top:0;margin-left:32px}
+.row.r-todo{padding-top:0;margin-left:64px;padding-bottom:20px}
+/* 이니셔티브 카드 */
+.ini-card{background:#151515;color:#fff;border-radius:12px;padding:12px 16px;cursor:pointer;min-width:180px;max-width:220px;flex-shrink:0;transition:transform .15s}
+.ini-card:hover{transform:translateY(-2px)}
+.ini-label{font-size:10px;font-weight:700;opacity:.5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.ini-title{font-size:13px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px}
+.ini-prog-bar{height:3px;background:rgba(255,255,255,.15);border-radius:9999px;overflow:hidden}
+.ini-prog-fill{height:100%;border-radius:9999px}
+.ini-pct{font-size:11px;margin-top:4px;opacity:.7}
+/* 목표 카드 */
+.goal-card{background:#fff;border:1.5px solid #E5E5E8;border-radius:10px;padding:10px 14px;cursor:pointer;min-width:150px;max-width:180px;flex-shrink:0;transition:border-color .15s}
+.goal-card:hover{border-color:#888}
+.goal-card.mine-team{border-color:#FFCFBD}
+.goal-type{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.goal-title{font-size:12px;font-weight:600;letter-spacing:-0.02em;margin-bottom:6px}
+.goal-prog-bar{height:3px;background:#E5E5E8;border-radius:9999px;overflow:hidden}
+.goal-prog-fill{height:100%;background:#FF6114;border-radius:9999px}
+/* 할일 칩 */
+.todo-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:9999px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid transparent;white-space:nowrap;transition:border-color .15s}
+.todo-chip:hover{border-color:currentColor}
+.tc-me-done{background:#FFEFE7;color:#F85100}
+.tc-me-doing{background:#fff;color:#F85100;border-color:#FFCFBD}
+.tc-team-done{background:#FFEFE7;color:#FFAF8A}
+.tc-team-doing{background:#fff;color:#FFAF8A;border-color:#FFCFBD}
+.tc-other-done{background:#F6F6F9;color:#888}
+.tc-other-doing{background:#fff;color:#B0B0B3;border-color:#E5E5E8}
+/* 연결선 (수직) */
+.connector{width:2px;background:#E5E5E8;margin:0 15px;align-self:stretch;min-height:12px}
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>💥 TeamFlow — 이니셔티브 달성 현황</h1>
+  <div class="leg"><div class="ld" style="background:#F85100"></div>나</div>
+  <div class="leg"><div class="ld" style="background:#FFAF8A"></div>개발팀</div>
+  <div class="leg"><div class="ld" style="background:#B0B0B3"></div>타팀</div>
+</div>
+
+<div id="canvas-wrap">
+<div id="canvas">
+<!-- JS로 렌더 -->
+</div>
+</div>
+
+<div id="side">
+  <div id="side-inner">
+    <div id="side-empty">노드를 클릭하면<br>상세 정보가 나타납니다</div>
+  </div>
+</div>
+
+<script>
+const INITIATIVES=[
+  {id:'i1',label:'반복업무 자동화',   team:'dev', pct:72, color:'#151515'},
+  {id:'i2',label:'커뮤니케이션 효율화',team:'dev', pct:55, color:'#2d2d2d'},
+  {id:'i3',label:'결제 안정성 강화',  team:'acct',pct:80, color:'#3d3d3d'},
+  {id:'i4',label:'고객 UX 혁신',      team:'plan',pct:40, color:'#4f4f4f'},
+  {id:'i5',label:'Q3 매출 달성',      team:'sales',pct:60,color:'#5d5d5d'},
+];
+const GOALS=[
+  {id:'g1',label:'DML 자동화',     parent:'i1',team:'dev', pct:75},
+  {id:'g2',label:'CI/CD 구축',     parent:'i1',team:'dev', pct:67},
+  {id:'g3',label:'Slack 리포트',   parent:'i2',team:'dev', pct:60},
+  {id:'g5',label:'결제 오류 감지', parent:'i3',team:'acct',pct:85},
+  {id:'g6',label:'정산 자동화',    parent:'i3',team:'acct',pct:75},
+  {id:'g7',label:'UX 인터뷰',      parent:'i4',team:'plan',pct:45},
+  {id:'g9',label:'리드 전환율',    parent:'i5',team:'sales',pct:55},
+];
+const TODOS=[
+  {id:'t1',label:'DML 스크립트',   goal:'g1',team:'dev', mine:true, done:true, person:'김도현'},
+  {id:'t2',label:'자동화 테스트',  goal:'g1',team:'dev', mine:true, done:false,person:'김도현'},
+  {id:'t3',label:'Slack 봇 연동',  goal:'g3',team:'dev', mine:true, done:true, person:'김도현'},
+  {id:'t4',label:'Actions 배포',   goal:'g2',team:'dev', mine:false,done:true, person:'박민준'},
+  {id:'t5',label:'Docker 최적화',  goal:'g2',team:'dev', mine:false,done:true, person:'박민준'},
+  {id:'t9',label:'UX 인터뷰',      goal:'g7',team:'plan',mine:false,done:true, person:'최서연'},
+  {id:'t14',label:'리드 발굴',     goal:'g9',team:'sales',mine:false,done:true,person:'정태양'},
+  {id:'t18',label:'결제 알림',     goal:'g5',team:'acct',mine:false,done:true, person:'이수아'},
+  {id:'t19',label:'정산 쿼리',     goal:'g6',team:'acct',mine:false,done:true, person:'이수아'},
+];
+
+const progColor=pct=>pct>=80?'#1A9F46':pct>=50?'#FF6114':'#FF4242';
+const teamName={dev:'개발팀',plan:'기획팀',sales:'영업팀',acct:'회계팀'};
+
+function todoChipClass(t){
+  if(t.mine) return t.done?'tc-me-done':'tc-me-doing';
+  if(t.team==='dev') return t.done?'tc-team-done':'tc-team-doing';
+  return t.done?'tc-other-done':'tc-other-doing';
+}
+
+function render(){
+  let html='';
+  INITIATIVES.forEach(ini=>{
+    const pc=progColor(ini.pct);
+    const childGoals=GOALS.filter(g=>g.parent===ini.id);
+    html+=`
+      <div style="margin-bottom:28px">
+        <!-- 이니셔티브 -->
+        <div style="padding:24px 24px 0">
+          <div class="ini-card" onclick="showDetail('${ini.id}')" style="background:${ini.color}">
+            <div class="ini-label">이니셔티브</div>
+            <div class="ini-title">${ini.label}</div>
+            <div class="ini-prog-bar"><div class="ini-prog-fill" style="width:${ini.pct}%;background:${pc}"></div></div>
+            <div class="ini-pct">${ini.pct}% · ${teamName[ini.team]}</div>
+          </div>
+        </div>`;
+
+    if(childGoals.length){
+      html+=`<div style="display:flex;flex-direction:column;gap:0;padding:0 40px;margin-top:10px">`;
+      childGoals.forEach(g=>{
+        const todos=TODOS.filter(t=>t.goal===g.id);
+        const myTeam=g.team==='dev';
+        html+=`
+          <div style="display:flex;align-items:flex-start;gap:0;margin-bottom:8px">
+            <div style="width:24px;display:flex;flex-direction:column;align-items:center;padding-top:10px">
+              <div style="width:1.5px;height:10px;background:#E5E5E8"></div>
+              <div style="width:6px;height:6px;border-radius:50%;background:${myTeam?'#FFAF8A':'#B0B0B3'};flex-shrink:0"></div>
+              <div style="width:1.5px;flex:1;background:#E5E5E8"></div>
+            </div>
+            <div style="flex:1">
+              <div class="goal-card ${myTeam?'mine-team':''}" onclick="showDetail('${g.id}')">
+                <div class="goal-type">목표 · ${teamName[g.team]}</div>
+                <div class="goal-title">${g.label}</div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="goal-prog-bar" style="flex:1"><div class="goal-prog-fill" style="width:${g.pct}%;background:${progColor(g.pct)}"></div></div>
+                  <span style="font-size:11px;color:${progColor(g.pct)};font-weight:700;flex-shrink:0">${g.pct}%</span>
+                </div>
+              </div>
+              ${todos.length?`
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-left:4px">
+                ${todos.map(t=>`
+                  <div class="todo-chip ${todoChipClass(t)}" onclick="showDetail('${t.id}')">
+                    ${t.mine?'👤 ':''}${t.label}${t.done?'':'…'}
+                  </div>`).join('')}
+              </div>`:''}
+            </div>
+          </div>`;
+      });
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  });
+  document.getElementById('canvas').innerHTML=html;
+}
+
+const allMap={};
+INITIATIVES.forEach(n=>{n.type='initiative';allMap[n.id]=n;});
+GOALS.forEach(n=>{n.type='goal';allMap[n.id]=n;});
+TODOS.forEach(n=>{n.type='todo';allMap[n.id]=n;});
+
+function showDetail(id){
+  const n=allMap[id];if(!n)return;
+  const pc=n.pct!=null?progColor(n.pct):'#FF6114';
+  let html=`<h2>${n.label}</h2>`;
+  if(n.type==='initiative'){
+    html+=`<div class="s-sub">🚀 이니셔티브 · ${teamName[n.team]}</div>`;
+    html+=`<div class="s-prog-wrap">
+      <div class="s-prog-label"><span>전체 진척도</span><span style="color:${pc};font-weight:700">${n.pct}%</span></div>
+      <div class="s-prog-bar"><div class="s-prog-fill" style="width:${n.pct}%;background:${pc}"></div></div>
+    </div>`;
+    const goals=GOALS.filter(g=>g.parent===id);
+    html+=`<div class="s-sec">연관 목표 (${goals.length})</div>`;
+    goals.forEach(g=>{html+=`<div class="s-item" onclick="showDetail('${g.id}')"><div class="s-dot" style="background:#888"></div>${g.label} <span style="margin-left:auto;color:${progColor(g.pct)};font-weight:700;font-size:11px">${g.pct}%</span></div>`;});
+  } else if(n.type==='goal'){
+    const ini=allMap[n.parent];
+    html+=`<div class="s-sub">🎯 목표 · ${teamName[n.team]}${ini?` · ${ini.label}`:''}</div>`;
+    html+=`<div class="s-prog-wrap">
+      <div class="s-prog-label"><span>완료율</span><span style="color:${pc};font-weight:700">${n.pct}%</span></div>
+      <div class="s-prog-bar"><div class="s-prog-fill" style="width:${n.pct}%;background:${pc}"></div></div>
+    </div>`;
+    const todos=TODOS.filter(t=>t.goal===id);
+    html+=`<div class="s-sec">할일 (${todos.length})</div>`;
+    todos.forEach(t=>{
+      const col=t.mine?'#F85100':t.team==='dev'?'#FFAF8A':'#B0B0B3';
+      html+=`<div class="s-item" onclick="showDetail('${t.id}')"><div class="s-dot" style="background:${col}"></div>${t.label}<span class="${t.done?'s-done':'s-doing'}" style="margin-left:auto">${t.done?'완료':'진행중'}</span></div>`;
+    });
+  } else {
+    const status=n.done?'<span class="s-done">✅ 완료</span>':'<span class="s-doing">🔄 진행중</span>';
+    html+=`<div class="s-sub">${n.mine?'👤 나 ('+n.person+')':'👥 '+n.person} · ${teamName[n.team]}</div>`;
+    html+=`<div style="margin-bottom:12px">${status}</div>`;
+    const g=allMap[n.goal];
+    if(g){html+=`<div class="s-sec">연결된 목표</div><div class="s-item" onclick="showDetail('${g.id}')"><div class="s-dot" style="background:#888"></div>${g.label}</div>`;}
+  }
+  document.getElementById('side-inner').innerHTML=html;
+}
+
+render();
+</script>
+</body>
+</html>

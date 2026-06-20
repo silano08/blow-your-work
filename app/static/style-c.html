@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>후보 C — 플랫 포스 그래프</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#F6F6F9;font-family:'Pretendard',-apple-system,sans-serif;overflow:hidden;height:100vh;color:#151515;letter-spacing:-0.02em}
+  #header{position:fixed;top:0;left:0;right:0;z-index:10;height:52px;background:#fff;border-bottom:1px solid #E5E5E8;display:flex;align-items:center;padding:0 20px;gap:16px}
+  #header h1{font-size:14px;font-weight:700;color:#F85100;letter-spacing:-0.03em}
+  .leg{display:flex;align-items:center;gap:6px;font-size:12px;color:#888}
+  .ld{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+  .filters{margin-left:auto;display:flex;gap:6px}
+  .fb{padding:0 12px;height:30px;border-radius:9999px;border:1.5px solid #E5E5E8;background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:#888;font-family:inherit;letter-spacing:-0.02em}
+  .fb.on{border-color:#F85100;color:#F85100;background:#FFEFE7}
+  #tooltip{position:fixed;pointer-events:none;z-index:999;background:#fff;border:1px solid #E5E5E8;border-radius:8px;padding:12px 14px;font-size:13px;max-width:220px;box-shadow:0 4px 16px rgba(0,0,0,0.1);display:none}
+  #tooltip .tt{font-weight:700;margin-bottom:3px;letter-spacing:-0.02em}
+  #tooltip .tm{color:#888;font-size:11px}
+  svg{display:block;margin-top:52px}
+  .link{stroke:#E5E5E8;stroke-width:1.5;fill:none}
+  .link.cross{stroke:#FFCFBD;stroke-width:2}
+  .link.hl{stroke:#F85100;stroke-width:2.5}
+  .node circle{cursor:pointer}
+  .node text{pointer-events:none;font-family:'Pretendard',-apple-system,sans-serif;letter-spacing:-0.02em}
+  .node.dim circle{opacity:0.15}
+  .node.dim text{opacity:0.1}
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>💥 TeamFlow — 전사 업무 연관도</h1>
+  <div class="leg"><div class="ld" style="background:#F85100"></div>내 작업</div>
+  <div class="leg"><div class="ld" style="background:#FFAF8A"></div>같은 팀</div>
+  <div class="leg"><div class="ld" style="background:#B0B0B3"></div>타팀</div>
+  <div class="leg"><div class="ld" style="background:#151515"></div>이니셔티브</div>
+  <div class="leg"><div class="ld" style="background:#888"></div>목표</div>
+  <div class="filters">
+    <button class="fb on" onclick="setFilter('all',this)">전체</button>
+    <button class="fb" onclick="setFilter('dev',this)">개발</button>
+    <button class="fb" onclick="setFilter('plan',this)">기획</button>
+    <button class="fb" onclick="setFilter('sales',this)">영업</button>
+    <button class="fb" onclick="setFilter('acct',this)">회계</button>
+  </div>
+</div>
+<div id="tooltip"><div class="tt" id="tt-t"></div><div class="tm" id="tt-m"></div></div>
+<svg id="svg"></svg>
+<script>
+const ME = 'dev'; // 내 팀
+
+const NODES = [
+  // 이니셔티브
+  {id:'i1',label:'반복업무 자동화',  type:'initiative',team:'dev', size:18},
+  {id:'i2',label:'커뮤니케이션 효율화',type:'initiative',team:'dev', size:16},
+  {id:'i3',label:'결제 안정성 강화', type:'initiative',team:'acct',size:17},
+  {id:'i4',label:'고객 UX 혁신',     type:'initiative',team:'plan',size:15},
+  {id:'i5',label:'Q3 매출 달성',     type:'initiative',team:'sales',size:17},
+  // 목표
+  {id:'g1',label:'DML 자동화',       type:'goal',team:'dev', size:11},
+  {id:'g2',label:'CI/CD 구축',       type:'goal',team:'dev', size:10},
+  {id:'g3',label:'Slack 리포트',     type:'goal',team:'dev', size:10},
+  {id:'g5',label:'결제 오류 감지',   type:'goal',team:'acct',size:11},
+  {id:'g6',label:'정산 자동화',      type:'goal',team:'acct',size:10},
+  {id:'g7',label:'UX 인터뷰',        type:'goal',team:'plan',size:10},
+  {id:'g9',label:'리드 전환율',      type:'goal',team:'sales',size:11},
+  // 할일 (내 팀)
+  {id:'t1',label:'DML 스크립트',  type:'todo',team:'dev',person:'김도현',mine:true,done:true, size:8},
+  {id:'t2',label:'자동화 테스트', type:'todo',team:'dev',person:'김도현',mine:true,done:false,size:8},
+  {id:'t3',label:'Slack 봇 연동', type:'todo',team:'dev',person:'김도현',mine:true,done:true, size:8},
+  {id:'t4',label:'Actions 배포',  type:'todo',team:'dev',person:'박민준',mine:false,done:true, size:7},
+  {id:'t5',label:'Docker 최적화', type:'todo',team:'dev',person:'박민준',mine:false,done:true, size:7},
+  {id:'t7',label:'API 캐싱 개선', type:'todo',team:'dev',person:'이지훈',mine:false,done:true, size:7},
+  // 할일 (타팀)
+  {id:'t9',label:'UX 인터뷰 진행',   type:'todo',team:'plan', person:'최서연',mine:false,done:true, size:7},
+  {id:'t10',label:'인사이트 문서화',  type:'todo',team:'plan', person:'최서연',mine:false,done:false,size:7},
+  {id:'t14',label:'신규 리드 발굴',   type:'todo',team:'sales',person:'정태양',mine:false,done:true, size:7},
+  {id:'t18',label:'결제 알림 시스템', type:'todo',team:'acct', person:'이수아', mine:false,done:true, size:7},
+  {id:'t19',label:'정산 쿼리 스크립트',type:'todo',team:'acct',person:'이수아', mine:false,done:true, size:7},
+];
+
+const EDGES = [
+  ['t1','g1'],['t2','g1'],['t3','g3'],['t4','g2'],['t5','g2'],['t7','g1'],
+  ['g1','i1'],['g2','i1'],['g3','i2'],['g5','i3'],['g6','i3'],['g7','i4'],['g9','i5'],
+  ['t9','g7'],['t10','g7'],['t14','g9'],['t18','g5'],['t19','g6'],
+  // 크로스팀
+  ['t1','t19'],['t3','t18'],
+];
+
+function nodeColor(n){
+  if(n.type==='initiative') return '#151515';
+  if(n.type==='goal')       return '#6D6D6D';
+  if(n.mine)                return n.done?'#F85100':'#FF6114';
+  if(n.team===ME)           return n.done?'#FFAF8A':'#FFCFBD';
+  return n.done?'#888888':'#B0B0B3';
+}
+function nodeStroke(n){
+  if(n.type==='initiative') return '#151515';
+  if(n.mine)                return '#F85100';
+  if(n.team===ME)           return '#FFAF8A';
+  return '#B0B0B3';
+}
+
+const W=window.innerWidth, H=window.innerHeight-52;
+const svg=d3.select('#svg').attr('width',W).attr('height',H);
+const g=svg.append('g');
+
+// zoom
+svg.call(d3.zoom().scaleExtent([0.3,3]).on('zoom',e=>g.attr('transform',e.transform)));
+
+const sim=d3.forceSimulation(NODES)
+  .force('link',d3.forceLink(EDGES.map(([s,t])=>({source:s,target:t,cross:['t1_t19','t3_t18'].includes(s+'_'+t)})))
+    .id(d=>d.id).distance(d=>d.source.type==='initiative'?90:d.source.type==='goal'?60:45).strength(0.8))
+  .force('charge',d3.forceManyBody().strength(d=>d.type==='initiative'?-400:d.type==='goal'?-200:-120))
+  .force('center',d3.forceCenter(W/2,H/2))
+  .force('collision',d3.forceCollide(d=>d.size+8));
+
+const link=g.append('g').selectAll('line')
+  .data(EDGES.map(([s,t])=>({source:s,target:t,cross:(s==='t1'&&t==='t19')||(s==='t3'&&t==='t18')})))
+  .join('line').attr('class',d=>d.cross?'link cross':'link');
+
+const node=g.append('g').selectAll('g')
+  .data(NODES).join('g').attr('class','node')
+  .call(d3.drag()
+    .on('start',(e,d)=>{if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y})
+    .on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y})
+    .on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null}))
+  .on('mouseover',(e,d)=>{
+    const tt=document.getElementById('tooltip');
+    document.getElementById('tt-t').textContent=d.label;
+    let meta='';
+    if(d.type==='initiative') meta='🚀 이니셔티브';
+    else if(d.type==='goal')  meta='🎯 목표';
+    else meta=(d.mine?'👤 나 ':'👥 ')+(d.person||'')+' · '+{dev:'개발팀',plan:'기획팀',sales:'영업팀',acct:'회계팀'}[d.team]+' · '+(d.done?'완료':'진행중');
+    document.getElementById('tt-m').textContent=meta;
+    tt.style.display='block';tt.style.left=(e.pageX+14)+'px';tt.style.top=(e.pageY-10)+'px';
+    // 하이라이트
+    const connIds=new Set([d.id]);
+    EDGES.forEach(([a,b])=>{if(a===d.id)connIds.add(b);if(b===d.id)connIds.add(a);});
+    node.classed('dim',n=>!connIds.has(n.id));
+    link.classed('hl',l=>l.source.id===d.id||l.target.id===d.id);
+  })
+  .on('mousemove',e=>{
+    document.getElementById('tooltip').style.left=(e.pageX+14)+'px';
+    document.getElementById('tooltip').style.top=(e.pageY-10)+'px';
+  })
+  .on('mouseleave',()=>{
+    document.getElementById('tooltip').style.display='none';
+    node.classed('dim',false);link.classed('hl',false);
+  });
+
+node.append('circle')
+  .attr('r',d=>d.size)
+  .attr('fill',d=>nodeColor(d))
+  .attr('stroke',d=>nodeStroke(d))
+  .attr('stroke-width',d=>d.type==='initiative'?0:d.mine?2.5:1.5);
+
+node.append('text')
+  .attr('dy',d=>d.type==='initiative'?-d.size-5:d.type==='goal'?-d.size-4:-d.size-3)
+  .attr('text-anchor','middle')
+  .attr('font-size',d=>d.type==='initiative'?12:d.type==='goal'?11:10)
+  .attr('font-weight',d=>d.type==='initiative'?700:d.type==='goal'?600:400)
+  .attr('fill',d=>d.type==='initiative'?'#151515':d.mine?'#F85100':'#6D6D6D')
+  .text(d=>d.label);
+
+sim.on('tick',()=>{
+  link.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y)
+      .attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+  node.attr('transform',d=>`translate(${d.x},${d.y})`);
+});
+
+let curFilter='all';
+function setFilter(team,btn){
+  curFilter=team;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  node.classed('dim',d=>team!=='all'&&d.team!==team&&d.type==='todo');
+}
+
+window.addEventListener('resize',()=>{
+  const w=window.innerWidth,h=window.innerHeight-52;
+  svg.attr('width',w).attr('height',h);
+  sim.force('center',d3.forceCenter(w/2,h/2)).alpha(0.3).restart();
+});
+</script>
+</body>
+</html>

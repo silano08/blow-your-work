@@ -2,576 +2,360 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>TeamFlow — 전사 3D 지식 네트워크</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>TeamFlow — 전사 업무 연관도</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
+<script src="https://d3js.org/d3.v7.min.js"></script>
 <style>
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { background:#050810; overflow:hidden; height:100vh; font-family:-apple-system,sans-serif; color:#fff; }
-  #canvas-container { position:fixed; inset:0; }
-  #ui { position:fixed; top:0; left:0; right:0; z-index:10; }
-  #header {
-    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-    padding:10px 18px; background:rgba(5,8,16,0.85); backdrop-filter:blur(16px);
-    border-bottom:1px solid rgba(255,255,255,0.06);
-  }
-  #header h1 { font-size:13px; font-weight:700; color:#f8914e; white-space:nowrap; }
-  .team-filters { display:flex; gap:6px; flex-wrap:wrap; }
-  .tf-btn {
-    padding:4px 11px; border-radius:20px; border:1.5px solid rgba(255,255,255,0.15);
-    font-size:11px; font-weight:600; cursor:pointer; background:transparent;
-    color:rgba(255,255,255,0.5); transition:all 0.2s;
-  }
-  .tf-btn.active { color:#fff; border-color:currentColor; }
-  .legend { display:flex; gap:10px; flex-wrap:wrap; margin-left:auto; }
-  .leg { display:flex; align-items:center; gap:4px; font-size:10px; color:rgba(255,255,255,0.45); }
-  .leg-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
-  /* 진척도 범례 */
-  .prog-legend { display:flex; gap:8px; align-items:center; font-size:10px; color:rgba(255,255,255,0.4); }
-  .pl-item { display:flex; align-items:center; gap:3px; }
-
-  #info-panel {
-    position:fixed; right:16px; top:74px; width:280px;
-    background:rgba(8,12,24,0.95); backdrop-filter:blur(20px);
-    border:1px solid rgba(255,255,255,0.1); border-radius:14px;
-    padding:16px; display:none; z-index:20; max-height:calc(100vh - 100px); overflow-y:auto;
-  }
-  #info-panel h3 { font-size:14px; font-weight:700; margin-bottom:3px; line-height:1.3; }
-  .ip-type { font-size:11px; opacity:0.55; margin-bottom:12px; }
-  .ip-section { font-size:10px; font-weight:700; opacity:0.35; text-transform:uppercase; letter-spacing:0.8px; margin:10px 0 5px; }
-  .ip-node { display:flex; align-items:center; gap:7px; padding:5px 7px; background:rgba(255,255,255,0.04); border-radius:7px; margin-bottom:3px; cursor:pointer; font-size:11px; }
-  .ip-node:hover { background:rgba(255,255,255,0.09); }
-  .ip-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
-  /* 진척도 바 */
-  .prog-bar-wrap { margin:8px 0 4px; }
-  .prog-label { display:flex; justify-content:space-between; font-size:11px; margin-bottom:4px; }
-  .prog-bar { height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; }
-  .prog-fill { height:100%; border-radius:3px; transition:width 0.6s ease; }
-  /* 팀별 기여 */
-  .team-contrib { display:flex; align-items:center; gap:6px; padding:4px 0; font-size:11px; }
-  .tc-bar { flex:1; height:4px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
-  .tc-fill { height:100%; border-radius:2px; }
-  /* 오늘 활동 뱃지 */
-  .today-badge { display:inline-block; padding:1px 6px; border-radius:8px; font-size:9px; font-weight:700; background:rgba(0,229,160,0.2); color:#00e5a0; margin-left:5px; vertical-align:middle; }
-  /* 상태 뱃지 */
-  .status-done { color:#00e5a0; }
-  .status-progress { color:#ffd166; }
-  .status-todo { color:rgba(255,255,255,0.35); }
-
-  #hint { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); font-size:11px; color:rgba(255,255,255,0.25); background:rgba(5,8,16,0.7); padding:5px 14px; border-radius:100px; pointer-events:none; }
-  #close-info { position:absolute; top:10px; right:12px; background:none; border:none; color:rgba(255,255,255,0.35); font-size:18px; cursor:pointer; line-height:1; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#F6F6F9;font-family:'Pretendard',-apple-system,sans-serif;overflow:hidden;height:100vh;color:#151515;letter-spacing:-0.02em}
+#header{position:fixed;top:0;left:0;right:0;z-index:10;height:52px;background:#fff;border-bottom:1px solid #E5E5E8;display:flex;align-items:center;padding:0 20px;gap:12px;flex-wrap:nowrap}
+#header h1{font-size:13px;font-weight:700;color:#F85100;letter-spacing:-0.03em;white-space:nowrap}
+.leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#888;white-space:nowrap}
+.ld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sep{width:1px;height:20px;background:#E5E5E8;flex-shrink:0}
+.filters{margin-left:auto;display:flex;gap:5px}
+.fb{padding:0 11px;height:28px;border-radius:9999px;border:1.5px solid #E5E5E8;background:#fff;font-size:11px;font-weight:600;cursor:pointer;color:#888;font-family:inherit;letter-spacing:-0.02em;transition:all .15s}
+.fb.on{border-color:#F85100;color:#F85100;background:#FFEFE7}
+/* 우측 패널 */
+#panel{position:fixed;top:52px;right:0;bottom:0;width:272px;background:#fff;border-left:1px solid #E5E5E8;transform:translateX(100%);transition:transform .25s ease;z-index:20;display:flex;flex-direction:column}
+#panel.open{transform:translateX(0)}
+#panel-head{padding:16px 16px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0}
+#panel-title{font-size:15px;font-weight:700;letter-spacing:-0.03em;line-height:1.3}
+#panel-close{background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;padding:0;flex-shrink:0}
+#panel-body{padding:12px 16px;overflow-y:auto;flex:1}
+.p-type{font-size:11px;color:#888;margin-bottom:12px}
+.p-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:9999px;font-size:11px;font-weight:600;margin-bottom:12px}
+.p-prog-wrap{margin-bottom:14px}
+.p-prog-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
+.p-prog-bar{height:4px;background:#E5E5E8;border-radius:9999px;overflow:hidden}
+.p-prog-fill{height:100%;border-radius:9999px;transition:width .5s}
+.p-sec{font-size:10px;font-weight:700;color:#B0B0B3;text-transform:uppercase;letter-spacing:.5px;margin:14px 0 6px}
+.p-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F6F6F9;border-radius:8px;margin-bottom:4px;cursor:pointer;font-size:12px;border:1.5px solid transparent;transition:border-color .15s}
+.p-item:hover{border-color:#F85100}
+.p-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.p-status-done{color:#1A9F46;font-size:11px;font-weight:600;margin-left:auto;flex-shrink:0}
+.p-status-doing{color:#FF6114;font-size:11px;font-weight:600;margin-left:auto;flex-shrink:0}
+/* 툴팁 */
+#tt{position:fixed;pointer-events:none;z-index:999;background:#151515;color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;max-width:200px;display:none;letter-spacing:-0.02em}
+#tt-t{font-weight:700;margin-bottom:2px}
+#tt-m{color:rgba(255,255,255,.65);font-size:10px}
+/* SVG */
+svg{display:block;margin-top:52px}
+.link{fill:none;stroke:#E5E5E8;stroke-width:1.5}
+.link.cross{stroke:#FFCFBD;stroke-width:2;stroke-dasharray:4,3}
+.link.hl{stroke:#F85100;stroke-width:2.5;opacity:1!important}
+.link.dim{opacity:0.06}
+.node circle{cursor:pointer;transition:filter .15s}
+.node text{pointer-events:none;font-family:'Pretendard',-apple-system,sans-serif;letter-spacing:-0.02em}
+.node.dim circle{opacity:0.1}
+.node.dim text{opacity:0.08}
+.node.selected circle{filter:drop-shadow(0 0 6px rgba(248,81,0,0.6))}
 </style>
 </head>
 <body>
-<div id="canvas-container"></div>
-<div id="ui">
-  <div id="header">
-    <h1>🧠 TeamFlow 전사 뇌지도</h1>
-    <div class="team-filters" id="team-filters">
-      <button class="tf-btn active" style="color:#ffffff;border-color:#ffffff" onclick="filterTeam('all',this)">전체</button>
-      <button class="tf-btn" style="color:#4d9eff" onclick="filterTeam('dev',this)">개발팀</button>
-      <button class="tf-btn" style="color:#b45eff" onclick="filterTeam('plan',this)">기획팀</button>
-      <button class="tf-btn" style="color:#00c896" onclick="filterTeam('sales',this)">영업팀</button>
-      <button class="tf-btn" style="color:#ff9f43" onclick="filterTeam('acct',this)">회계팀</button>
-    </div>
-    <div class="prog-legend">
-      <div class="pl-item"><span class="leg-dot" style="background:#00e5a0"></span>80%+</div>
-      <div class="pl-item"><span class="leg-dot" style="background:#ffd166"></span>50%+</div>
-      <div class="pl-item"><span class="leg-dot" style="background:#ff9f43"></span>30%+</div>
-      <div class="pl-item"><span class="leg-dot" style="background:#ff4757"></span>지연</div>
-    </div>
-    <div class="legend">
-      <div class="leg"><span class="leg-dot" style="background:#ffffff;opacity:0.6"></span>이니셔티브</div>
-      <div class="leg"><span class="leg-dot" style="background:#ffd166"></span>목표</div>
-      <div class="leg"><span class="leg-dot" style="background:#4d9eff"></span>할일</div>
-    </div>
-    <span style="font-size:10px;color:rgba(255,255,255,0.25)">드래그·줌·클릭</span>
+<div id="header">
+  <h1>💥 TeamFlow</h1>
+  <div class="sep"></div>
+  <div class="leg"><div class="ld" style="background:#F85100"></div>나</div>
+  <div class="leg"><div class="ld" style="background:#FFAF8A"></div>개발팀</div>
+  <div class="leg"><div class="ld" style="background:#B0B0B3"></div>타팀</div>
+  <div class="leg"><div class="ld" style="background:#151515"></div>이니셔티브</div>
+  <div class="leg"><div class="ld" style="background:#888"></div>목표</div>
+  <div class="filters">
+    <button class="fb on" onclick="setFilter('all',this)">전체</button>
+    <button class="fb" onclick="setFilter('dev',this)">개발</button>
+    <button class="fb" onclick="setFilter('plan',this)">기획</button>
+    <button class="fb" onclick="setFilter('sales',this)">영업</button>
+    <button class="fb" onclick="setFilter('acct',this)">회계</button>
   </div>
 </div>
 
-<div id="info-panel">
-  <button id="close-info" onclick="closeInfo()">×</button>
-  <h3 id="ip-title"></h3>
-  <div class="ip-type" id="ip-type"></div>
-  <div id="ip-progress"></div>
-  <div class="ip-section" id="ip-section-label">연관 업무</div>
-  <div id="ip-list"></div>
+<div id="panel">
+  <div id="panel-head">
+    <div id="panel-title"></div>
+    <button id="panel-close" onclick="closePanel()">×</button>
+  </div>
+  <div id="panel-body"></div>
 </div>
 
-<div id="hint">드래그로 회전 · 휠로 줌 · 노드 클릭으로 연관 탐색</div>
+<div id="tt"><div id="tt-t"></div><div id="tt-m"></div></div>
+<svg id="svg"></svg>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ══════════════════════════════════════════════════════════════════════════
-// 데이터 — 전사 데일리 스크럼 기반
-// ══════════════════════════════════════════════════════════════════════════
-const TEAMS = {
-  dev:   { name:'개발팀',  hex:'#4d9eff', three:0x4d9eff },
-  plan:  { name:'기획팀',  hex:'#b45eff', three:0xb45eff },
-  sales: { name:'영업팀',  hex:'#00c896', three:0x00c896 },
-  acct:  { name:'회계팀',  hex:'#ff9f43', three:0xff9f43 },
-};
+const ME_ID = 'kimdo'; // 내 식별자
+const ME_TEAM = 'dev';
+const TEAM_NAME = {dev:'개발팀',plan:'기획팀',sales:'영업팀',acct:'회계팀'};
 
-// 회사 공통 이니셔티브 (노드 크기는 진척도로 동적 계산)
-const INITIATIVES = [
-  { id:'i1', label:'반복업무 전면 자동화', team:'dev',   desc:'DML·배포·알림 수작업 90% 제거' },
-  { id:'i2', label:'커뮤니케이션 효율화',  team:'dev',   desc:'Slack 봇·일일 리포트 자동 발송' },
-  { id:'i3', label:'결제·정산 안정성 강화',team:'acct',  desc:'오류 0건, 정산 자동화' },
-  { id:'i4', label:'고객 UX 혁신',         team:'plan',  desc:'인터뷰→제품 반영 2주 이내' },
-  { id:'i5', label:'Q3 매출 목표 달성',    team:'sales', desc:'신규 계약 15건, ARR 30% 성장' },
+const NODES = [
+  // 이니셔티브 (5개) — pct: 완료율
+  {id:'i1',label:'반복업무 자동화',     type:'initiative',team:'dev', pct:72,size:19},
+  {id:'i2',label:'커뮤니케이션 효율화', type:'initiative',team:'dev', pct:55,size:17},
+  {id:'i3',label:'결제 안정성 강화',    type:'initiative',team:'acct',pct:80,size:18},
+  {id:'i4',label:'고객 UX 혁신',        type:'initiative',team:'plan',pct:40,size:16},
+  {id:'i5',label:'Q3 매출 달성',        type:'initiative',team:'sales',pct:62,size:18},
+
+  // 목표 (10개)
+  {id:'g1',label:'DML 자동화',        type:'goal',team:'dev', pct:75,size:11},
+  {id:'g2',label:'CI/CD 구축',        type:'goal',team:'dev', pct:67,size:11},
+  {id:'g3',label:'Slack 리포트',      type:'goal',team:'dev', pct:60,size:10},
+  {id:'g4',label:'온보딩 문서화',     type:'goal',team:'dev', pct:50,size:10},
+  {id:'g5',label:'결제 오류 감지',    type:'goal',team:'acct',pct:85,size:11},
+  {id:'g6',label:'정산 자동화',       type:'goal',team:'acct',pct:75,size:10},
+  {id:'g7',label:'UX 인터뷰',         type:'goal',team:'plan',pct:45,size:10},
+  {id:'g8',label:'IA 재설계',         type:'goal',team:'plan',pct:35,size:10},
+  {id:'g9',label:'리드 전환율',       type:'goal',team:'sales',pct:55,size:11},
+  {id:'g10',label:'신규 채널 발굴',   type:'goal',team:'sales',pct:48,size:10},
+
+  // 할일 — mine: 내 작업
+  {id:'t1',label:'DML 스크립트',       type:'todo',team:'dev', person:'김도현',mine:true, done:true, size:8},
+  {id:'t2',label:'자동화 테스트',      type:'todo',team:'dev', person:'김도현',mine:true, done:false,size:8},
+  {id:'t3',label:'Slack 봇 연동',      type:'todo',team:'dev', person:'김도현',mine:true, done:true, size:8},
+  {id:'t4',label:'Actions 배포',       type:'todo',team:'dev', person:'박민준',mine:false,done:true, size:7},
+  {id:'t5',label:'Docker 최적화',      type:'todo',team:'dev', person:'박민준',mine:false,done:true, size:7},
+  {id:'t6',label:'API 캐싱 개선',      type:'todo',team:'dev', person:'이지훈',mine:false,done:false,size:7},
+  {id:'t7',label:'테크 위키 작성',     type:'todo',team:'dev', person:'이지훈',mine:false,done:true, size:7},
+  {id:'t8',label:'코드 리뷰 체크리스트',type:'todo',team:'dev',person:'박민준',mine:false,done:false,size:7},
+  {id:'t9',label:'UX 인터뷰 진행',     type:'todo',team:'plan',person:'최서연',mine:false,done:true, size:7},
+  {id:'t10',label:'인사이트 문서화',   type:'todo',team:'plan',person:'최서연',mine:false,done:false,size:7},
+  {id:'t11',label:'IA 와이어프레임',   type:'todo',team:'plan',person:'김하늘',mine:false,done:false,size:7},
+  {id:'t12',label:'사용성 테스트',     type:'todo',team:'plan',person:'김하늘',mine:false,done:true, size:7},
+  {id:'t13',label:'경쟁사 벤치마크',  type:'todo',team:'sales',person:'정태양',mine:false,done:true, size:7},
+  {id:'t14',label:'신규 리드 발굴',    type:'todo',team:'sales',person:'정태양',mine:false,done:true, size:7},
+  {id:'t15',label:'파트너 미팅',       type:'todo',team:'sales',person:'유수현',mine:false,done:false,size:7},
+  {id:'t16',label:'채널 분석 리포트',  type:'todo',team:'sales',person:'유수현',mine:false,done:false,size:7},
+  {id:'t17',label:'월별 마감 검토',    type:'todo',team:'acct',person:'이수아', mine:false,done:true, size:7},
+  {id:'t18',label:'결제 알림 시스템',  type:'todo',team:'acct',person:'이수아', mine:false,done:true, size:7},
+  {id:'t19',label:'정산 쿼리 스크립트',type:'todo',team:'acct',person:'장은지', mine:false,done:true, size:7},
+  {id:'t20',label:'이상 거래 탐지',    type:'todo',team:'acct',person:'장은지', mine:false,done:false,size:7},
+  {id:'t21',label:'규정 준수 체크',    type:'todo',team:'acct',person:'이수아', mine:false,done:true, size:7},
 ];
 
-// 목표 (이니셔티브 하위)
-const GOALS = [
-  { id:'g1', label:'DML 처리 자동화',       parent:'i1', team:'dev'   },
-  { id:'g2', label:'CI/CD 파이프라인 구축', parent:'i1', team:'dev'   },
-  { id:'g3', label:'Slack 일일 리포트',     parent:'i2', team:'dev'   },
-  { id:'g4', label:'매일 답장 자동화',      parent:'i2', team:'dev'   },
-  { id:'g5', label:'결제 오류 실시간 감지', parent:'i3', team:'acct'  },
-  { id:'g6', label:'정산 쿼리 자동화',      parent:'i3', team:'acct'  },
-  { id:'g7', label:'UX 인터뷰 인사이트',   parent:'i4', team:'plan'  },
-  { id:'g8', label:'온보딩 플로우 개선',    parent:'i4', team:'plan'  },
-  { id:'g9', label:'리드 전환율 개선',      parent:'i5', team:'sales' },
-  { id:'g10',label:'계약서 전자화',         parent:'i5', team:'sales' },
+const EDGES = [
+  // 할일 → 목표
+  ['t1','g1'],['t2','g1'],['t6','g1'],
+  ['t4','g2'],['t5','g2'],['t8','g2'],
+  ['t3','g3'],
+  ['t7','g4'],
+  ['t18','g5'],['t20','g5'],['t21','g5'],
+  ['t17','g6'],['t19','g6'],
+  ['t9','g7'],['t10','g7'],
+  ['t11','g8'],['t12','g8'],
+  ['t13','g9'],['t14','g9'],
+  ['t15','g10'],['t16','g10'],
+  // 목표 → 이니셔티브
+  ['g1','i1'],['g2','i1'],['g3','i2'],['g4','i2'],
+  ['g5','i3'],['g6','i3'],
+  ['g7','i4'],['g8','i4'],
+  ['g9','i5'],['g10','i5'],
+  // 크로스팀 연결
+  ['t1','t19'],['t3','t18'],['t2','t10'],
 ];
 
-// 할일 — status: 'done' | 'doing' | 'todo', today_active: 오늘 데일리에 작성됐는지
-const TODOS = [
-  // 개발팀 — 김도현
-  { id:'t1',  label:'DML 자동화 스크립트',    team:'dev',   person:'김도현', goal:'g1', status:'done',  today_active:true  },
-  { id:'t2',  label:'자동화 테스트 케이스',    team:'dev',   person:'김도현', goal:'g1', status:'doing', today_active:true  },
-  { id:'t3',  label:'Slack 봇 리포트 연동',    team:'dev',   person:'김도현', goal:'g3', status:'done',  today_active:true  },
-  // 개발팀 — 박민준
-  { id:'t4',  label:'GitHub Actions 배포',     team:'dev',   person:'박민준', goal:'g2', status:'done',  today_active:true  },
-  { id:'t5',  label:'Docker 빌드 최적화',      team:'dev',   person:'박민준', goal:'g2', status:'done',  today_active:false },
-  { id:'t6',  label:'PR 자동 머지 설정',       team:'dev',   person:'박민준', goal:'g2', status:'doing', today_active:true  },
-  // 개발팀 — 이지훈
-  { id:'t7',  label:'API 응답 캐싱 개선',      team:'dev',   person:'이지훈', goal:'g1', status:'done',  today_active:true  },
-  { id:'t8',  label:'DB 인덱스 최적화',        team:'dev',   person:'이지훈', goal:'g1', status:'todo',  today_active:false },
-  // 기획팀 — 최서연
-  { id:'t9',  label:'UX 인터뷰 2건 진행',      team:'plan',  person:'최서연', goal:'g7', status:'done',  today_active:true  },
-  { id:'t10', label:'인터뷰 인사이트 문서화',   team:'plan',  person:'최서연', goal:'g7', status:'doing', today_active:true  },
-  { id:'t11', label:'온보딩 와이어프레임',      team:'plan',  person:'최서연', goal:'g8', status:'todo',  today_active:false },
-  // 기획팀 — 한지민
-  { id:'t12', label:'AB 테스트 시나리오',       team:'plan',  person:'한지민', goal:'g8', status:'done',  today_active:true  },
-  { id:'t13', label:'사용성 테스트 결과 분석',  team:'plan',  person:'한지민', goal:'g7', status:'doing', today_active:true  },
-  // 영업팀 — 정태양
-  { id:'t14', label:'신규 리드 10건 발굴',      team:'sales', person:'정태양', goal:'g9', status:'done',  today_active:true  },
-  { id:'t15', label:'데모 영상 제작',           team:'sales', person:'정태양', goal:'g9', status:'todo',  today_active:false },
-  // 영업팀 — 오현우
-  { id:'t16', label:'계약서 전자서명 도입',     team:'sales', person:'오현우', goal:'g10',status:'doing', today_active:true  },
-  { id:'t17', label:'CRM 데이터 업데이트',      team:'sales', person:'오현우', goal:'g9', status:'done',  today_active:true  },
-  // 회계팀 — 이수아
-  { id:'t18', label:'결제 오류 알림 시스템',    team:'acct',  person:'이수아', goal:'g5', status:'done',  today_active:true  },
-  { id:'t19', label:'정산 쿼리 자동화 스크립트',team:'acct',  person:'이수아', goal:'g6', status:'done',  today_active:true  },
-  // 회계팀 — 윤성진
-  { id:'t20', label:'월말 정산 보고서 자동화',  team:'acct',  person:'윤성진', goal:'g6', status:'done',  today_active:true  },
-  { id:'t21', label:'이상 거래 탐지 룰',        team:'acct',  person:'윤성진', goal:'g5', status:'todo',  today_active:false },
-];
+const CROSS_SET = new Set(['t1-t19','t3-t18','t2-t10']);
 
-// 크로스팀 협업 엣지 (추가)
-const CROSS_EDGES = [
-  ['t1','t19'],  // 개발-회계: DML 자동화 공유
-  ['t3','t18'],  // 개발-회계: Slack 알림 연동
-  ['t4','t16'],  // 개발-영업: 계약서 API
-  ['t9','t13'],  // 기획 내: 인터뷰 공유
-  ['t10','t11'], // 기획 내: 인사이트→와이어프레임
-  ['t14','t9'],  // 영업-기획: 리드 인터뷰
-  ['g1','g6'],   // 목표: 자동화 공유
-  ['g3','g5'],   // Slack↔결제 알림 연동
-  ['i1','i3'],   // 이니셔티브 시너지
-];
-
-// ══════════════════════════════════════════════════════════════════════════
-// 진척도 계산
-// ══════════════════════════════════════════════════════════════════════════
-function calcProgress(nodeId) {
-  // 이니셔티브: 하위 모든 todo 기준
-  const goalIds = GOALS.filter(g => g.parent === nodeId).map(g => g.id);
-  const allGoalIds = nodeId.startsWith('g') ? [nodeId] : goalIds;
-  const related = TODOS.filter(t => allGoalIds.includes(t.goal));
-  if (!related.length) return null;
-  const done = related.filter(t => t.status === 'done').length;
-  return { done, total: related.length, pct: Math.round(done / related.length * 100) };
+function nodeColor(n){
+  if(n.type==='initiative') return '#151515';
+  if(n.type==='goal')       return '#6D6D6D';
+  if(n.mine)                return n.done?'#F85100':'#FF6114';
+  if(n.team===ME_TEAM)      return n.done?'#FFAF8A':'#FFCFBD';
+  return n.done?'#888888':'#B0B0B3';
+}
+function nodeStroke(n){
+  if(n.type==='initiative') return 'none';
+  if(n.mine)                return '#F85100';
+  if(n.team===ME_TEAM)      return '#FFAF8A';
+  return '#D4D4D6';
+}
+function progColor(pct){
+  if(pct>=80)return'#1A9F46';
+  if(pct>=50)return'#FF6114';
+  return'#FF4242';
 }
 
-function progressColor(pct) {
-  if (pct >= 80) return { hex:'#00e5a0', three:0x00e5a0 };
-  if (pct >= 50) return { hex:'#ffd166', three:0xffd166 };
-  if (pct >= 30) return { hex:'#ff9f43', three:0xff9f43 };
-  return { hex:'#ff4757', three:0xff4757 };
+const W=window.innerWidth,H=window.innerHeight-52;
+const svg=d3.select('#svg').attr('width',W).attr('height',H);
+const g=svg.append('g');
+svg.call(d3.zoom().scaleExtent([0.2,3]).on('zoom',e=>g.attr('transform',e.transform)));
+
+const edgeData=EDGES.map(([s,t])=>({source:s,target:t,cross:CROSS_SET.has(s+'-'+t)}));
+
+const sim=d3.forceSimulation(NODES)
+  .force('link',d3.forceLink(edgeData).id(d=>d.id)
+    .distance(d=>{
+      const s=d.source,t=d.target;
+      if((typeof s==='object'?s.type:'')==='initiative') return 110;
+      if((typeof s==='object'?s.type:'')==='goal') return 70;
+      return 50;
+    }).strength(0.7))
+  .force('charge',d3.forceManyBody().strength(d=>d.type==='initiative'?-500:d.type==='goal'?-220:-100))
+  .force('center',d3.forceCenter(W/2,H/2))
+  .force('collision',d3.forceCollide(d=>d.size+10));
+
+const linkSel=g.append('g').selectAll('line')
+  .data(edgeData).join('line')
+  .attr('class',d=>d.cross?'link cross':'link');
+
+const nodeSel=g.append('g').selectAll('g')
+  .data(NODES).join('g').attr('class','node')
+  .call(d3.drag()
+    .on('start',(e,d)=>{if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y})
+    .on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y})
+    .on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null}))
+  .on('click',(e,d)=>{e.stopPropagation();selectNode(d);})
+  .on('mouseover',(e,d)=>{
+    const tt=document.getElementById('tt');
+    document.getElementById('tt-t').textContent=d.label;
+    let meta='';
+    if(d.type==='initiative') meta=`🚀 이니셔티브 · ${d.pct}% 달성`;
+    else if(d.type==='goal')  meta=`🎯 목표 · ${d.pct}% 완료`;
+    else meta=`${d.mine?'👤 나 ':'👥 '}${d.person||''} · ${TEAM_NAME[d.team]} · ${d.done?'✅ 완료':'🔄 진행중'}`;
+    document.getElementById('tt-m').textContent=meta;
+    tt.style.display='block';tt.style.left=(e.pageX+14)+'px';tt.style.top=(e.pageY-10)+'px';
+  })
+  .on('mousemove',e=>{
+    const tt=document.getElementById('tt');
+    tt.style.left=(e.pageX+14)+'px';tt.style.top=(e.pageY-10)+'px';
+  })
+  .on('mouseleave',()=>{ document.getElementById('tt').style.display='none'; });
+
+nodeSel.append('circle')
+  .attr('r',d=>d.size)
+  .attr('fill',d=>nodeColor(d))
+  .attr('stroke',d=>nodeStroke(d))
+  .attr('stroke-width',d=>d.mine?2.5:d.type==='goal'?1.5:0);
+
+nodeSel.append('text')
+  .attr('dy',d=>-(d.size+5))
+  .attr('text-anchor','middle')
+  .attr('font-size',d=>d.type==='initiative'?12:d.type==='goal'?11:10)
+  .attr('font-weight',d=>d.type==='initiative'?700:d.type==='goal'?600:400)
+  .attr('fill',d=>d.type==='initiative'?'#151515':d.mine?'#F85100':'#6D6D6D')
+  .text(d=>d.label);
+
+sim.on('tick',()=>{
+  linkSel.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y)
+         .attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+  nodeSel.attr('transform',d=>`translate(${d.x},${d.y})`);
+});
+
+svg.on('click',()=>{ deselectNode(); closePanel(); });
+
+let selectedId=null;
+const nodeMap={};
+NODES.forEach(n=>nodeMap[n.id]=n);
+
+function getConnected(id){
+  const s=new Set([id]);
+  EDGES.forEach(([a,b])=>{if(a===id)s.add(b);if(b===id)s.add(a);});
+  return s;
 }
 
-// 팀별 기여 분석 (이니셔티브 단위)
-function teamContrib(initiativeId) {
-  const goalIds = GOALS.filter(g => g.parent === initiativeId).map(g => g.id);
-  const result = {};
-  TODOS.filter(t => goalIds.includes(t.goal)).forEach(t => {
-    if (!result[t.team]) result[t.team] = { done:0, total:0 };
-    result[t.team].total++;
-    if (t.status === 'done') result[t.team].done++;
-  });
-  return result;
+function selectNode(d){
+  selectedId=d.id;
+  const conn=getConnected(d.id);
+  nodeSel.classed('dim',n=>!conn.has(n.id));
+  nodeSel.classed('selected',n=>n.id===d.id);
+  linkSel.classed('hl',l=>l.source.id===d.id||l.target.id===d.id);
+  linkSel.classed('dim',l=>l.source.id!==d.id&&l.target.id!==d.id);
+  openPanel(d,conn);
+}
+function deselectNode(){
+  selectedId=null;
+  nodeSel.classed('dim',false).classed('selected',false);
+  linkSel.classed('hl',false).classed('dim',false);
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// 노드/엣지 배열 구성
-// ══════════════════════════════════════════════════════════════════════════
-const ALL_NODES = [
-  ...INITIATIVES.map(n => ({ ...n, group:'initiative' })),
-  ...GOALS.map(n => ({ ...n, group:'goal' })),
-  ...TODOS.map(n => ({ ...n, group:'todo' })),
-];
+function openPanel(d,conn){
+  const typeLabel={initiative:'🚀 이니셔티브',goal:'🎯 목표',todo:'✅ 할일'};
+  document.getElementById('panel-title').textContent=d.label;
+  const pc=d.pct!=null?progColor(d.pct):'#FF6114';
 
-const ALL_EDGES = [
-  ...TODOS.map(t => [t.id, t.goal]),
-  ...GOALS.map(g => [g.id, g.parent]),
-  ...CROSS_EDGES,
-];
+  let html=`<div class="p-type">${typeLabel[d.type]||''} · ${TEAM_NAME[d.team]}</div>`;
 
-const nodeMap = {};
-ALL_NODES.forEach(n => { nodeMap[n.id] = n; });
-
-// ══════════════════════════════════════════════════════════════════════════
-// 노드 크기/색상 설정
-// ══════════════════════════════════════════════════════════════════════════
-ALL_NODES.forEach(n => {
-  if (n.group === 'initiative') {
-    const prog = calcProgress(n.id);
-    const pct = prog ? prog.pct : 0;
-    const col = progressColor(pct);
-    n._color = col.three;
-    n._hex   = col.hex;
-    n._size  = 2.2 + (pct / 100) * 1.2; // 완료율에 따라 2.2~3.4
-    n._prog  = prog;
-  } else if (n.group === 'goal') {
-    const prog = calcProgress(n.id);
-    const pct = prog ? prog.pct : 0;
-    const col = progressColor(pct);
-    n._color = col.three;
-    n._hex   = col.hex;
-    n._size  = 1.4 + (pct / 100) * 0.6;
-    n._prog  = prog;
-  } else {
-    // todo 노드 — 팀 색상
-    const tc = TEAMS[n.team] || { three:0x888888, hex:'#888' };
-    n._color = tc.three;
-    n._hex   = tc.hex;
-    n._size  = n.today_active ? 1.15 : 0.85;
-    n._prog  = null;
-  }
-});
-
-// ══════════════════════════════════════════════════════════════════════════
-// Three.js 셋업
-// ══════════════════════════════════════════════════════════════════════════
-const W = window.innerWidth, H = window.innerHeight;
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050810);
-scene.fog = new THREE.FogExp2(0x050810, 0.011);
-
-const camera = new THREE.PerspectiveCamera(58, W/H, 0.1, 1000);
-camera.position.set(0, 0, 60);
-
-const renderer = new THREE.WebGLRenderer({ antialias:true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(W, H);
-document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-// 조명
-scene.add(new THREE.AmbientLight(0x1a2035, 4));
-const pl1 = new THREE.PointLight(0x4d9eff, 2.5, 150); pl1.position.set(40, 30, 40); scene.add(pl1);
-const pl2 = new THREE.PointLight(0xff5500, 1.5, 100); pl2.position.set(-40,-20, 20); scene.add(pl2);
-const pl3 = new THREE.PointLight(0x00e5a0, 1.2, 100); pl3.position.set(0, -40,-30); scene.add(pl3);
-
-// 배경 별
-const starPos = new Float32Array(4500);
-for (let i = 0; i < 4500; i++) starPos[i] = (Math.random()-0.5)*500;
-const starGeo = new THREE.BufferGeometry();
-starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color:0xffffff, size:0.25, opacity:0.35, transparent:true })));
-
-// 노드 위치 (피보나치 구 배치)
-const phi = Math.PI * (3 - Math.sqrt(5));
-ALL_NODES.forEach((n, i) => {
-  // 그룹별 구 반경
-  const spread = n.group==='initiative' ? 8 : n.group==='goal' ? 18 : 30;
-  const y = 1 - (i / ALL_NODES.length) * 2;
-  const r = Math.sqrt(Math.max(0, 1 - y*y));
-  const theta = phi * i;
-  n.x = r * Math.cos(theta) * spread;
-  n.y = y * spread * 0.75;
-  n.z = r * Math.sin(theta) * spread;
-});
-
-// 메시 생성
-const meshes = [];
-const pulseRings = []; // today_active 펄스용
-ALL_NODES.forEach(n => {
-  const geo = new THREE.SphereGeometry(n._size, 28, 28);
-  const mat = new THREE.MeshPhongMaterial({
-    color: n._color, emissive: n._color, emissiveIntensity: 0.45,
-    transparent:true, opacity:0.9, shininess:90,
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.set(n.x, n.y, n.z);
-  mesh.userData = n;
-  scene.add(mesh);
-  meshes.push(mesh);
-  n.mesh = mesh;
-
-  // glow ring — 이니셔티브/목표
-  if (n.group === 'initiative' || n.group === 'goal') {
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(n._size+0.35, n._size+0.85, 36),
-      new THREE.MeshBasicMaterial({ color:n._color, side:THREE.DoubleSide, transparent:true, opacity:0.25 })
-    );
-    mesh.add(ring);
+  if(d.type==='todo'){
+    const statusCol=d.done?'#1A9F46':'#FF6114';
+    html+=`<span class="p-badge" style="background:${d.done?'#E8F9F0':'#FFF4EE'};color:${statusCol}">${d.done?'✅ 완료':'🔄 진행중'}</span>`;
+    if(d.mine) html+=`<span class="p-badge" style="background:#FFEFE7;color:#F85100;margin-left:4px">👤 나의 작업</span>`;
+    if(d.person) html+=`<div style="font-size:12px;color:#888;margin-bottom:12px">담당: ${d.person}</div>`;
   }
 
-  // 펄스 ring — 오늘 활동한 todo
-  if (n.group === 'todo' && n.today_active) {
-    const pr = new THREE.Mesh(
-      new THREE.RingGeometry(n._size+0.2, n._size+0.5, 24),
-      new THREE.MeshBasicMaterial({ color:0xffffff, side:THREE.DoubleSide, transparent:true, opacity:0.6 })
-    );
-    mesh.add(pr);
-    pulseRings.push(pr);
-  }
-});
-
-// 엣지 (튜브)
-ALL_EDGES.forEach(([a, b]) => {
-  const na = nodeMap[a], nb = nodeMap[b];
-  if (!na || !nb) return;
-  const isCross = CROSS_EDGES.some(([x,y]) => (x===a&&y===b)||(x===b&&y===a));
-  const points = [];
-  for (let t = 0; t <= 20; t++) {
-    const p = t/20;
-    const mx=(na.x+nb.x)/2, my=(na.y+nb.y)/2+4, mz=(na.z+nb.z)/2;
-    points.push(new THREE.Vector3(
-      na.x*(1-p)**2 + mx*2*p*(1-p) + nb.x*p**2,
-      na.y*(1-p)**2 + my*2*p*(1-p) + nb.y*p**2,
-      na.z*(1-p)**2 + mz*2*p*(1-p) + nb.z*p**2
-    ));
-  }
-  const curve = new THREE.CatmullRomCurve3(points);
-  const edgeColor = isCross ? 0x4a6fa5 : 0x1e2a3a;
-  const tube = new THREE.Mesh(
-    new THREE.TubeGeometry(curve, 20, isCross ? 0.09 : 0.05, 6, false),
-    new THREE.MeshBasicMaterial({ color:edgeColor, transparent:true, opacity: isCross ? 0.7 : 0.4 })
-  );
-  tube.userData = { edgeA:a, edgeB:b };
-  scene.add(tube);
-});
-
-// ══════════════════════════════════════════════════════════════════════════
-// 컨트롤
-// ══════════════════════════════════════════════════════════════════════════
-let isDragging=false, lastX=0, lastY=0, rotX=0, rotY=0;
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-let mouseDownX=0, mouseDownY=0;
-
-renderer.domElement.addEventListener('mousedown', e => {
-  isDragging=true; lastX=e.clientX; lastY=e.clientY;
-  mouseDownX=e.clientX; mouseDownY=e.clientY;
-});
-renderer.domElement.addEventListener('mousemove', e => {
-  if (!isDragging) return;
-  const dx=e.clientX-lastX, dy=e.clientY-lastY;
-  rotY += dx*0.005; rotX += dy*0.005;
-  lastX=e.clientX; lastY=e.clientY;
-  scene.rotation.x = rotX*0.4;
-  scene.rotation.y = rotY;
-});
-renderer.domElement.addEventListener('mouseup', e => {
-  if (Math.abs(e.clientX-mouseDownX)<5 && Math.abs(e.clientY-mouseDownY)<5) handleClick(e);
-  isDragging=false;
-});
-renderer.domElement.addEventListener('wheel', e => {
-  camera.position.z = Math.max(15, Math.min(130, camera.position.z + e.deltaY*0.05));
-}, { passive:true });
-
-// 터치
-let lastTouchX=0, lastTouchY=0;
-renderer.domElement.addEventListener('touchstart', e => {
-  lastTouchX=e.touches[0].clientX; lastTouchY=e.touches[0].clientY;
-}, { passive:true });
-renderer.domElement.addEventListener('touchmove', e => {
-  const dx=e.touches[0].clientX-lastTouchX, dy=e.touches[0].clientY-lastTouchY;
-  rotY+=dx*0.005; rotX+=dy*0.005;
-  lastTouchX=e.touches[0].clientX; lastTouchY=e.touches[0].clientY;
-  scene.rotation.x=rotX*0.4; scene.rotation.y=rotY;
-}, { passive:true });
-
-function handleClick(e) {
-  const rect = renderer.domElement.getBoundingClientRect();
-  mouse.x = ((e.clientX-rect.left)/rect.width)*2-1;
-  mouse.y = -((e.clientY-rect.top)/rect.height)*2+1;
-  raycaster.setFromCamera(mouse, camera);
-  const hits = raycaster.intersectObjects(meshes);
-  if (hits.length) showInfo(hits[0].object);
-  else closeInfo();
-}
-
-// ══════════════════════════════════════════════════════════════════════════
-// 정보 패널
-// ══════════════════════════════════════════════════════════════════════════
-let selectedMesh = null;
-
-function showInfo(mesh) {
-  selectedMesh = mesh;
-  const n = mesh.userData;
-  document.getElementById('ip-title').textContent = n.label;
-
-  let typeLabel='', progHTML='', sectionLabel='연관 업무';
-
-  if (n.group === 'initiative') {
-    const prog = n._prog;
-    const tc = teamContrib(n.id);
-    const activeToday = TODOS.filter(t =>
-      GOALS.filter(g=>g.parent===n.id).map(g=>g.id).includes(t.goal) && t.today_active
-    );
-    typeLabel = `🚀 이니셔티브 · ${TEAMS[n.team]?.name||''}\n${n.desc||''}`;
-    sectionLabel = '팀별 기여 현황';
-
-    if (prog) {
-      const col = progressColor(prog.pct);
-      progHTML = `
-        <div class="prog-bar-wrap">
-          <div class="prog-label">
-            <span>전체 진척도</span>
-            <span style="color:${col.hex};font-weight:700">${prog.pct}% (${prog.done}/${prog.total})</span>
-          </div>
-          <div class="prog-bar"><div class="prog-fill" style="width:${prog.pct}%;background:${col.hex}"></div></div>
-        </div>
-        ${activeToday.length ? `<div style="font-size:10px;color:#00e5a0;margin:6px 0">✨ 오늘 ${activeToday.length}명 기여 중</div>` : ''}
-        ${Object.entries(tc).map(([tid, s]) => {
-          const t = TEAMS[tid]; const pct=s.total?Math.round(s.done/s.total*100):0;
-          return `<div class="team-contrib">
-            <span style="width:52px;color:${t?.hex||'#888'};font-size:10px">${t?.name||tid}</span>
-            <div class="tc-bar"><div class="tc-fill" style="width:${pct}%;background:${t?.hex||'#888'}"></div></div>
-            <span style="font-size:10px;opacity:0.6;width:36px;text-align:right">${pct}%</span>
-          </div>`;
-        }).join('')}`;
-    }
-  } else if (n.group === 'goal') {
-    const prog = n._prog;
-    const parent = nodeMap[n.parent];
-    typeLabel = `🎯 목표 · ${TEAMS[n.team]?.name||''}\n↗ ${parent?.label||''}`;
-    if (prog) {
-      const col = progressColor(prog.pct);
-      progHTML = `
-        <div class="prog-bar-wrap">
-          <div class="prog-label"><span>완료율</span><span style="color:${col.hex};font-weight:700">${prog.pct}% (${prog.done}/${prog.total})</span></div>
-          <div class="prog-bar"><div class="prog-fill" style="width:${prog.pct}%;background:${col.hex}"></div></div>
-        </div>`;
-    }
-  } else {
-    const statusMap = { done:'✅ 완료', doing:'🔄 진행중', todo:'⬜ 예정' };
-    const statusCol  = { done:'#00e5a0', doing:'#ffd166', todo:'rgba(255,255,255,0.35)' };
-    typeLabel = `${n.today_active?'🔥 오늘 활동':'👤'} ${n.person} · ${TEAMS[n.team]?.name||''}`;
-    progHTML = `<div style="font-size:12px;color:${statusCol[n.status]||'#888'};margin-bottom:8px">${statusMap[n.status]||''}</div>`;
-  }
-
-  document.getElementById('ip-type').innerHTML = typeLabel.replace('\n','<br>');
-  document.getElementById('ip-type').style.color = n._hex;
-  document.getElementById('ip-progress').innerHTML = progHTML;
-  document.getElementById('ip-section-label').textContent = sectionLabel;
-
-  const connected = ALL_EDGES
-    .filter(([a,b]) => a===n.id||b===n.id)
-    .map(([a,b]) => nodeMap[a===n.id?b:a]).filter(Boolean);
-
-  document.getElementById('ip-list').innerHTML = connected.map(c => {
-    const isCross = CROSS_EDGES.some(([x,y])=>(x===n.id&&y===c.id)||(x===c.id&&y===n.id));
-    return `<div class="ip-node" onclick="focusNode('${c.id}')">
-      <div class="ip-dot" style="background:${c._hex}"></div>
-      <span>${c.label}</span>
-      ${c.today_active?'<span class="today-badge">오늘</span>':''}
-      ${isCross?'<span style="font-size:9px;color:#4a6fa5;margin-left:auto">크로스팀</span>':''}
+  if(d.pct!=null){
+    html+=`<div class="p-prog-wrap">
+      <div class="p-prog-label"><span>진척도</span><span style="color:${pc};font-weight:700">${d.pct}%</span></div>
+      <div class="p-prog-bar"><div class="p-prog-fill" style="width:${d.pct}%;background:${pc}"></div></div>
     </div>`;
-  }).join('') || '<div style="font-size:11px;opacity:0.3;padding:4px 0">연결 없음</div>';
+  }
 
-  document.getElementById('info-panel').style.display = 'block';
+  // 연결된 노드들
+  const connNodes=[...conn].filter(id=>id!==d.id).map(id=>nodeMap[id]).filter(Boolean);
+  if(connNodes.length){
+    const byType={initiative:[],goal:[],todo:[]};
+    connNodes.forEach(n=>byType[n.type].push(n));
+    const order=['initiative','goal','todo'];
+    const secName={initiative:'이니셔티브',goal:'목표',todo:'할일'};
+    order.forEach(t=>{
+      if(!byType[t].length) return;
+      html+=`<div class="p-sec">${secName[t]} (${byType[t].length})</div>`;
+      byType[t].forEach(n=>{
+        const col=nodeColor(n);
+        const status=n.type==='todo'
+          ?`<span class="${n.done?'p-status-done':'p-status-doing'}">${n.done?'완료':'진행중'}</span>`
+          :n.pct!=null?`<span style="color:${progColor(n.pct)};font-size:11px;font-weight:700;margin-left:auto">${n.pct}%</span>`:'';
+        html+=`<div class="p-item" onclick="selectNodeById('${n.id}')">
+          <div class="p-dot" style="background:${col}"></div>
+          <span>${n.label}</span>${status}
+        </div>`;
+      });
+    });
+  }
 
-  // 하이라이트
-  const connIds = new Set([n.id, ...connected.map(c=>c.id)]);
-  meshes.forEach(m => {
-    const inSet = connIds.has(m.userData.id);
-    m.material.opacity = inSet ? 1 : 0.08;
-    m.material.emissiveIntensity = inSet ? 0.75 : 0.04;
-  });
+  // 크로스팀 연결
+  const crossConn=connNodes.filter(n=>n.type==='todo'&&n.team!==ME_TEAM);
+  if(crossConn.length){
+    html+=`<div style="margin-top:14px;padding:10px;background:#FFF4EE;border-radius:8px;border:1px solid #FFCFBD">
+      <div style="font-size:10px;font-weight:700;color:#F85100;margin-bottom:5px">🔗 크로스팀 연관</div>
+      ${crossConn.map(n=>`<div style="font-size:11px;color:#888;margin-bottom:2px">${TEAM_NAME[n.team]} · ${n.person} — ${n.label}</div>`).join('')}
+    </div>`;
+  }
+
+  document.getElementById('panel-body').innerHTML=html;
+  document.getElementById('panel').classList.add('open');
 }
 
-function focusNode(id) {
-  const n = nodeMap[id];
-  if (n?.mesh) showInfo(n.mesh);
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  deselectNode();
 }
 
-function closeInfo() {
-  document.getElementById('info-panel').style.display = 'none';
-  meshes.forEach(m => { m.material.opacity=0.9; m.material.emissiveIntensity=0.45; });
-  selectedMesh = null;
+function selectNodeById(id){
+  const n=nodeMap[id];
+  if(n)selectNode(n);
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// 팀 필터
-// ══════════════════════════════════════════════════════════════════════════
-let activeFilter = 'all';
-function filterTeam(teamId, btn) {
-  activeFilter = teamId;
-  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  closeInfo();
-
-  meshes.forEach(m => {
-    const n = m.userData;
-    let visible = true;
-    if (teamId !== 'all') {
-      if (n.group === 'initiative') visible = n.team === teamId;
-      else if (n.group === 'goal')  visible = n.team === teamId;
-      else visible = n.team === teamId;
-    }
-    m.material.opacity = visible ? 0.9 : 0.06;
-    m.material.emissiveIntensity = visible ? 0.45 : 0.02;
-  });
+let curFilter='all';
+function setFilter(team,btn){
+  curFilter=team;
+  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  if(team==='all'){
+    nodeSel.classed('dim',false);
+    linkSel.classed('dim',false);
+  } else {
+    const relevant=new Set(NODES.filter(n=>n.team===team||n.type==='initiative'||n.type==='goal').map(n=>n.id));
+    nodeSel.classed('dim',n=>n.type==='todo'&&n.team!==team);
+    linkSel.classed('dim',l=>{
+      const si=typeof l.source==='object'?l.source.id:l.source;
+      const ti=typeof l.target==='object'?l.target.id:l.target;
+      return !relevant.has(si)||!relevant.has(ti);
+    });
+  }
 }
 
-// ══════════════════════════════════════════════════════════════════════════
-// 애니메이션
-// ══════════════════════════════════════════════════════════════════════════
-let clock = 0;
-function animate() {
-  requestAnimationFrame(animate);
-  clock += 0.016;
-
-  // 자동 회전 (드래그 아닐 때)
-  if (!isDragging) scene.rotation.y += 0.0008;
-
-  // 펄스 ring 스케일 애니메이션
-  pulseRings.forEach((r, i) => {
-    const s = 1 + 0.3 * Math.sin(clock * 2.5 + i * 0.7);
-    r.scale.set(s, s, 1);
-    r.material.opacity = 0.3 + 0.3 * Math.sin(clock * 2.5 + i * 0.7);
-  });
-
-  // 이니셔티브 노드 느린 호흡
-  INITIATIVES.forEach(n => {
-    if (n.mesh) {
-      const s = 1 + 0.04 * Math.sin(clock * 0.8 + n.id.charCodeAt(1));
-      n.mesh.scale.set(s, s, s);
-    }
-  });
-
-  renderer.render(scene, camera);
-}
-animate();
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth/window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+window.addEventListener('resize',()=>{
+  const w=window.innerWidth,h=window.innerHeight-52;
+  svg.attr('width',w).attr('height',h);
+  sim.force('center',d3.forceCenter(w/2,h/2)).alpha(0.3).restart();
 });
 </script>
 </body>

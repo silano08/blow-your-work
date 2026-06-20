@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>후보 D — 방사형 계층도</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#fff;font-family:'Pretendard',-apple-system,sans-serif;overflow:hidden;height:100vh;letter-spacing:-0.02em;color:#151515}
+  #header{position:fixed;top:0;left:0;right:0;height:52px;background:#fff;border-bottom:1px solid #E5E5E8;display:flex;align-items:center;padding:0 20px;gap:16px;z-index:10}
+  #header h1{font-size:14px;font-weight:700;color:#F85100;letter-spacing:-0.03em}
+  .leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#888}
+  .ld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+  #panel{position:fixed;right:0;top:52px;bottom:0;width:260px;background:#F6F6F9;border-left:1px solid #E5E5E8;padding:16px;overflow-y:auto;transform:translateX(100%);transition:transform .25s ease;z-index:20}
+  #panel.open{transform:translateX(0)}
+  #panel-title{font-size:14px;font-weight:700;margin-bottom:4px;letter-spacing:-0.02em}
+  #panel-type{font-size:11px;color:#888;margin-bottom:12px}
+  #panel-prog{margin-bottom:12px}
+  .prog-label{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px}
+  .prog-bar{height:4px;background:#E5E5E8;border-radius:9999px;overflow:hidden}
+  .prog-fill{height:100%;background:#FF6114;border-radius:9999px}
+  .panel-sec{font-size:10px;font-weight:700;color:#B0B0B3;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 6px}
+  .pitem{padding:7px 10px;background:#fff;border:1px solid #E5E5E8;border-radius:8px;margin-bottom:4px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:7px}
+  .pitem:hover{border-color:#F85100}
+  .pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  #close-panel{position:absolute;top:12px;right:12px;background:none;border:none;font-size:18px;cursor:pointer;color:#888;line-height:1}
+  #hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);font-size:11px;color:#B0B0B3;background:#fff;border:1px solid #E5E5E8;padding:5px 14px;border-radius:9999px;pointer-events:none}
+  svg{display:block;margin-top:52px}
+  .edge{fill:none;stroke:#E5E5E8;stroke-width:1.5}
+  .edge.cross{stroke:#FFCFBD;stroke-width:2;stroke-dasharray:4,3}
+  .edge.hl{stroke:#F85100;stroke-width:2.5}
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>🧠 TeamFlow — 이니셔티브 방사형 맵</h1>
+  <div class="leg"><div class="ld" style="background:#F85100"></div>나</div>
+  <div class="leg"><div class="ld" style="background:#FFAF8A"></div>개발팀</div>
+  <div class="leg"><div class="ld" style="background:#B0B0B3"></div>타팀</div>
+  <div class="leg"><div class="ld" style="background:#151515"></div>이니셔티브</div>
+  <div class="leg"><div class="ld" style="background:#888"></div>목표</div>
+</div>
+<div id="panel">
+  <button id="close-panel" onclick="closePanel()">×</button>
+  <div id="panel-title"></div>
+  <div id="panel-type"></div>
+  <div id="panel-prog"></div>
+  <div class="panel-sec">연관 노드</div>
+  <div id="panel-list"></div>
+</div>
+<div id="hint">드래그로 이동 · 휠로 줌 · 클릭으로 상세</div>
+<svg id="svg"></svg>
+
+<script>
+// ── 데이터 ──
+const INITIATIVES=[
+  {id:'i1',label:'반복업무 자동화',  team:'dev', pct:72},
+  {id:'i2',label:'커뮤니케이션 효율화',team:'dev', pct:55},
+  {id:'i3',label:'결제 안정성 강화', team:'acct',pct:80},
+  {id:'i4',label:'고객 UX 혁신',     team:'plan',pct:40},
+  {id:'i5',label:'Q3 매출 달성',     team:'sales',pct:60},
+];
+const GOALS=[
+  {id:'g1',label:'DML 자동화',      parent:'i1',team:'dev', pct:75},
+  {id:'g2',label:'CI/CD 구축',      parent:'i1',team:'dev', pct:67},
+  {id:'g3',label:'Slack 리포트',    parent:'i2',team:'dev', pct:60},
+  {id:'g5',label:'결제 오류 감지',  parent:'i3',team:'acct',pct:85},
+  {id:'g6',label:'정산 자동화',     parent:'i3',team:'acct',pct:75},
+  {id:'g7',label:'UX 인터뷰',       parent:'i4',team:'plan',pct:45},
+  {id:'g9',label:'리드 전환율',     parent:'i5',team:'sales',pct:55},
+];
+const TODOS=[
+  {id:'t1',label:'DML 스크립트',  goal:'g1',team:'dev', mine:true, done:true},
+  {id:'t2',label:'자동화 테스트', goal:'g1',team:'dev', mine:true, done:false},
+  {id:'t3',label:'Slack 봇 연동', goal:'g3',team:'dev', mine:true, done:true},
+  {id:'t4',label:'Actions 배포',  goal:'g2',team:'dev', mine:false,done:true},
+  {id:'t5',label:'Docker 최적화', goal:'g2',team:'dev', mine:false,done:true},
+  {id:'t9',label:'UX 인터뷰',     goal:'g7',team:'plan',mine:false,done:true},
+  {id:'t14',label:'리드 발굴',    goal:'g9',team:'sales',mine:false,done:true},
+  {id:'t18',label:'결제 알림',    goal:'g5',team:'acct',mine:false,done:true},
+  {id:'t19',label:'정산 쿼리',    goal:'g6',team:'acct',mine:false,done:true},
+];
+const CROSS=[['t1','t19'],['t3','t18']];
+
+// ── 노드 풀 ──
+const allNodes={};
+INITIATIVES.forEach(n=>{n.type='initiative';n.r=20;allNodes[n.id]=n;});
+GOALS.forEach(n=>{n.type='goal';n.r=13;allNodes[n.id]=n;});
+TODOS.forEach(n=>{n.type='todo';n.r=7;allNodes[n.id]=n;});
+
+function nColor(n){
+  if(n.type==='initiative')return'#151515';
+  if(n.type==='goal')return'#6D6D6D';
+  if(n.mine)return n.done?'#F85100':'#FF6114';
+  if(n.team==='dev')return n.done?'#FFAF8A':'#FFCFBD';
+  return n.done?'#888':'#B0B0B3';
+}
+function nStroke(n){
+  if(n.mine)return'#F85100';
+  if(n.type==='initiative')return'none';
+  return'none';
+}
+
+// ── 레이아웃: 방사형 ──
+const W=window.innerWidth,H=window.innerHeight-52;
+const CX=W/2,CY=H/2;
+const N=INITIATIVES.length;
+
+INITIATIVES.forEach((ini,ii)=>{
+  const angle=(ii/N)*2*Math.PI-Math.PI/2;
+  const R=H*.28;
+  ini.x=CX+R*Math.cos(angle); ini.y=CY+R*Math.sin(angle);
+  // 중앙 허브 (가상)
+  ini.cx=CX; ini.cy=CY;
+
+  const childGoals=GOALS.filter(g=>g.parent===ini.id);
+  childGoals.forEach((g,gi)=>{
+    const spread=(childGoals.length-1)*.35;
+    const baseAngle=angle-spread/2+gi/(Math.max(childGoals.length-1,1))*spread;
+    const gr=R+H*.15;
+    g.x=CX+gr*Math.cos(baseAngle); g.y=CY+gr*Math.sin(baseAngle);
+
+    const childTodos=TODOS.filter(t=>t.goal===g.id);
+    childTodos.forEach((t,ti)=>{
+      const tspread=(childTodos.length-1)*.25;
+      const tangle=baseAngle-tspread/2+ti/(Math.max(childTodos.length-1,1))*tspread;
+      const tr=gr+H*.13;
+      t.x=CX+tr*Math.cos(tangle); t.y=CY+tr*Math.sin(tangle);
+    });
+  });
+});
+
+// ── SVG ──
+const svg=d3.select('#svg').attr('width',W).attr('height',H);
+const root=svg.append('g');
+svg.call(d3.zoom().scaleExtent([0.3,2.5]).on('zoom',e=>root.attr('transform',e.transform)));
+
+// 엣지
+const allEdges=[];
+GOALS.forEach(g=>{
+  const ini=allNodes[g.parent];
+  if(ini)allEdges.push({s:ini,t:g,cross:false});
+});
+TODOS.forEach(t=>{
+  const g=allNodes[t.goal];
+  if(g)allEdges.push({s:g,t,cross:false});
+});
+CROSS.forEach(([a,b])=>{
+  if(allNodes[a]&&allNodes[b])allEdges.push({s:allNodes[a],t:allNodes[b],cross:true});
+});
+
+// 이니셔티브 → 중앙 연결
+const center={x:CX,y:CY};
+INITIATIVES.forEach(ini=>{
+  allEdges.push({s:center,t:ini,cross:false,hub:true});
+});
+
+const edgeSel=root.append('g').selectAll('line').data(allEdges).join('line')
+  .attr('class',d=>d.cross?'edge cross':d.hub?'edge hub':'edge')
+  .attr('x1',d=>d.s.x).attr('y1',d=>d.s.y)
+  .attr('x2',d=>d.t.x).attr('y2',d=>d.t.y);
+
+// 중앙 허브 노드
+root.append('circle').attr('cx',CX).attr('cy',CY).attr('r',10)
+  .attr('fill','#F85100').attr('stroke','none');
+root.append('text').attr('x',CX).attr('y',CY+24).attr('text-anchor','middle')
+  .attr('font-size',10).attr('fill','#888').attr('font-family','Pretendard,-apple-system,sans-serif')
+  .text('전사 목표');
+
+// 노드
+const ALL_FLAT=[...INITIATIVES,...GOALS,...TODOS];
+const nodeSel=root.append('g').selectAll('g').data(ALL_FLAT).join('g').attr('class','node-g')
+  .attr('transform',d=>`translate(${d.x},${d.y})`)
+  .style('cursor','pointer')
+  .on('click',(e,d)=>openPanel(d))
+  .on('mouseover',(e,d)=>{
+    const connIds=new Set([d.id]);
+    allEdges.forEach(e2=>{
+      if(e2.s.id===d.id&&e2.t.id)connIds.add(e2.t.id);
+      if(e2.t.id===d.id&&e2.s.id)connIds.add(e2.s.id);
+    });
+    nodeSel.style('opacity',n=>connIds.has(n.id)?1:0.15);
+    edgeSel.classed('hl',e2=>(e2.s.id===d.id||e2.t.id===d.id)&&!e2.hub);
+  })
+  .on('mouseleave',()=>{
+    nodeSel.style('opacity',1);
+    edgeSel.classed('hl',false);
+  });
+
+nodeSel.append('circle')
+  .attr('r',d=>d.r)
+  .attr('fill',d=>nColor(d))
+  .attr('stroke',d=>nStroke(d))
+  .attr('stroke-width',d=>d.mine?2.5:0);
+
+nodeSel.append('text')
+  .attr('dy',d=>-(d.r+5))
+  .attr('text-anchor','middle')
+  .attr('font-size',d=>d.type==='initiative'?12:d.type==='goal'?11:10)
+  .attr('font-weight',d=>d.type==='initiative'?700:d.type==='goal'?600:400)
+  .attr('fill',d=>d.mine?'#F85100':d.type==='initiative'?'#151515':'#6D6D6D')
+  .attr('font-family','Pretendard,-apple-system,sans-serif')
+  .attr('letter-spacing','-0.02em')
+  .text(d=>d.label);
+
+function openPanel(d){
+  document.getElementById('panel-title').textContent=d.label;
+  const tMap={initiative:'🚀 이니셔티브',goal:'🎯 목표',todo:'✅ 할일'};
+  document.getElementById('panel-type').textContent=tMap[d.type]||'';
+  // 진척도
+  let prog='';
+  if(d.pct!=null){
+    prog=`<div class="prog-label"><span>진척도</span><span style="color:#F85100;font-weight:700">${d.pct}%</span></div><div class="prog-bar"><div class="prog-fill" style="width:${d.pct}%"></div></div>`;
+  } else if(d.type==='todo'){
+    prog=`<div style="font-size:12px;color:${d.done?'#1A9F46':'#FF6114'}">${d.done?'✅ 완료':'🔄 진행중'}</div>`;
+  }
+  document.getElementById('panel-prog').innerHTML=prog;
+  // 연결 노드
+  const connIds=new Set();
+  allEdges.forEach(e=>{
+    if(e.s.id===d.id&&e.t.id)connIds.add(e.t.id);
+    if(e.t.id===d.id&&e.s.id)connIds.add(e.s.id);
+  });
+  const items=[...connIds].map(id=>allNodes[id]).filter(Boolean);
+  document.getElementById('panel-list').innerHTML=items.map(n=>`
+    <div class="pitem" onclick="focusNode('${n.id}')">
+      <div class="pdot" style="background:${nColor(n)}"></div>
+      <span>${n.label}</span>
+    </div>`).join('');
+  document.getElementById('panel').classList.add('open');
+}
+function closePanel(){document.getElementById('panel').classList.remove('open');}
+function focusNode(id){if(allNodes[id])openPanel(allNodes[id]);}
+
+window.addEventListener('resize',()=>{
+  svg.attr('width',window.innerWidth).attr('height',window.innerHeight-52);
+});
+</script>
+</body>
+</html>
