@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 from contextlib import asynccontextmanager
@@ -5,9 +6,11 @@ from pathlib import Path
 
 import aiosqlite
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.database import init_db, DB_PATH
 from app.routers.auth import router as auth_router
@@ -22,24 +25,71 @@ from app.routers.ai_suggest import router as ai_suggest_router
 
 load_dotenv()
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger("taskwave")
+
 STATIC_DIR = Path(__file__).parent / "static"
 _START_TIME = time.time()
 VERSION = "0.3.0"
 
 
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to every response."""
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data: https://avatars.githubusercontent.com; "
+            "connect-src 'self' https://api.github.com; "
+            "frame-src 'self';"
+        )
+        return response
+
+
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    """Log each request with method, path, status, and duration."""
+    async def dispatch(self, request: Request, call_next):
+        start = time.time()
+        response = await call_next(request)
+        duration_ms = int((time.time() - start) * 1000)
+        logger.info(
+            "%s %s %s %dms",
+            request.method, request.url.path,
+            response.status_code, duration_ms,
+        )
+        return response
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize DB on startup."""
+    logger.info("TaskWave v%s starting up", VERSION)
     await init_db()
+    logger.info("DB initialized")
     yield
+    logger.info("TaskWave shutting down")
 
 
 app = FastAPI(
-    title="Hivemind — 집단지성이 목표를 완성한다",
-    description="전사 업무 연관 그래프 · AI 의사결정 감사 · 비동기 데일리 스크럼",
+    title="TaskWave — 업무의 흐름을 탄다",
+    description="전사 지식 공유 플랫폼 · AI 업무 흐름 분석 · 비동기 데일리 스크럼",
     version=VERSION,
     lifespan=lifespan,
 )
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
 
 app.include_router(auth_router)
 app.include_router(teams_router)

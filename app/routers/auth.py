@@ -161,10 +161,12 @@ async def github_callback(
     await db.commit()
 
     response = RedirectResponse(f"{FRONTEND_URL}/?login=success")
+    is_https = FRONTEND_URL.startswith("https://")
     response.set_cookie(
         "session_token",
         session_token,
         httponly=True,
+        secure=is_https,
         max_age=SESSION_TTL_HOURS * 3600,
         samesite="lax",
     )
