@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blow Your Work 💥</title>
+  <style>
+    :root {
+      --primary: #F85100;
+      --primary-hover: #D54000;
+      --primary-light: #FF6114;
+      --primary-bg: #FFEFE7;
+      --primary-border: #FFCFBD;
+      --bg-01: #FFFFFF;
+      --bg-02: #F6F6F9;
+      --bg-03: #EDEDF0;
+      --text-01: #151515;
+      --text-02: #454545;
+      --text-03: #888888;
+      --border: #E5E5E8;
+      --high: #FF4242;
+      --high-bg: #FFEEED;
+      --medium: #FF6114;
+      --medium-bg: #FFEFE7;
+      --low: #1A9F46;
+      --low-bg: #F0FDF4;
+      --done-bg: #F6F6F9;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-02);
+      color: var(--text-01);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: var(--bg-01);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--primary);
+      text-decoration: none;
+    }
+    .logo span { font-size: 22px; }
+    .task-count {
+      background: var(--primary-bg);
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* ── Main layout ── */
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+
+    /* ── Hero / Input section ── */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      border-radius: 20px;
+      padding: 36px 32px;
+      margin-bottom: 28px;
+      color: white;
+    }
+    .hero h1 {
+      font-size: 26px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+    .hero p {
+      font-size: 14px;
+      opacity: 0.85;
+      margin-bottom: 20px;
+    }
+    .input-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .goal-input {
+      flex: 1;
+      background: rgba(255,255,255,0.95);
+      border: 2px solid transparent;
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-size: 15px;
+      color: var(--text-01);
+      resize: none;
+      min-height: 52px;
+      max-height: 140px;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+    .goal-input:focus {
+      outline: none;
+      border-color: white;
+    }
+    .goal-input::placeholder { color: var(--text-03); }
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: white;
+      color: var(--primary);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 14px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .btn-mic {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      font-size: 18px;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-mic:hover { background: rgba(255,255,255,0.3); }
+    .btn-mic.recording {
+      background: #FF4242;
+      border-color: #FF4242;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* ── Loading state ── */
+    .loading-card {
+      background: var(--bg-01);
+      border-radius: var(--radius);
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--primary-border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-text {
+      color: var(--text-02);
+      font-size: 14px;
+    }
+    .loading-goal {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    /* ── Result section ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-01);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-meta {
+      font-size: 13px;
+      color: var(--text-03);
+    }
+
+    /* ── Task card ── */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .task-card {
+      background: var(--bg-01);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      transition: box-shadow 0.2s, opacity 0.2s;
+      animation: fadeIn 0.3s ease forwards;
+    }
+    .task-card:hover { box-shadow: var(--shadow-lg); }
+    .task-card.done { opacity: 0.5; }
+    .task-card.done .task-title { text-decoration: line-through; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .task-check {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .task-check:hover { border-color: var(--primary); }
+    .task-check.checked {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .task-check.checked::after {
+      content: '';
+      width: 6px;
+      height: 10px;
+      border: 2px solid white;
+      border-top: none;
+      border-left: none;
+      transform: rotate(45deg) translateY(-1px);
+    }
+
+    .task-body { flex: 1; min-width: 0; }
+    .task-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      word-break: keep-all;
+    }
+    .task-detail {
+      font-size: 13px;
+      color: var(--text-02);
+      line-height: 1.5;
+      word-break: keep-all;
+    }
+    .task-footer {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+    .badge-high { background: var(--high-bg); color: var(--high); }
+    .badge-medium { background: var(--medium-bg); color: var(--medium); }
+    .badge-low { background: var(--low-bg); color: var(--low); }
+    .badge-done { background: var(--done-bg); color: var(--text-03); }
+
+    .task-actions {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .btn-icon {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--text-03);
+      cursor: pointer;
+      font-size: 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .btn-icon:hover { background: var(--bg-02); color: var(--text-01); }
+    .btn-icon.delete:hover { background: var(--high-bg); color: var(--high); }
+
+    /* ── All tasks section ── */
+    .filter-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 14px;
+      background: var(--bg-03);
+      padding: 4px;
+      border-radius: 10px;
+      width: fit-content;
+    }
+    .filter-tab {
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-03);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .filter-tab.active {
+      background: white;
+      color: var(--primary);
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-03);
+    }
+    .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; line-height: 1.6; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--text-01);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 100px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 999;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Error ── */
+    .error-card {
+      background: var(--high-bg);
+      border: 1px solid var(--high);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin-bottom: 20px;
+      color: var(--high);
+      font-size: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 600px) {
+      .hero { padding: 24px 20px; }
+      .hero h1 { font-size: 21px; }
+      .input-row { flex-direction: column; }
+      .btn-group { flex-direction: row; }
+      main { padding: 20px 16px 80px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#"><span>💥</span> Blow Your Work</a>
+  <span class="task-count" id="task-count">0 tasks</span>
+</header>
+
+<main>
+  <!-- Hero: goal input -->
+  <section class="hero">
+    <h1>목표를 날려버리세요 🚀</h1>
+    <p>자연어로 목표를 입력하면 Copilot이 실행 가능한 태스크로 분해해드립니다</p>
+    <div class="input-row">
+      <textarea
+        id="goal-input"
+        class="goal-input"
+        placeholder="예: 사이드 프로젝트 MVP를 2주 안에 완성하고 싶어"
+        rows="2"
+      ></textarea>
+      <div class="btn-group">
+        <button class="btn-primary" id="breakdown-btn" onclick="handleBreakdown()">
+          <span>⚡</span> 분해하기
+        </button>
+        <button class="btn-mic" id="mic-btn" title="음성 입력" onclick="toggleMic()">🎙️</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Loading -->
+  <div id="loading-section" style="display:none">
+    <div class="loading-card">
+      <div class="spinner"></div>
+      <div class="loading-goal" id="loading-goal-text"></div>
+      <div class="loading-text">Copilot이 목표를 분석하고 있어요...</div>
+    </div>
+  </div>
+
+  <!-- Error -->
+  <div id="error-section" style="display:none">
+    <div class="error-card">
+      <span>⚠️</span>
+      <span id="error-text"></span>
+    </div>
+  </div>
+
+  <!-- Latest breakdown result -->
+  <div id="result-section" style="display:none">
+    <div class="section-header">
+      <div class="section-title">✨ 분해된 태스크 <span id="result-goal-badge" class="badge badge-medium" style="font-size:12px;"></span></div>
+      <div class="section-meta" id="result-count"></div>
+    </div>
+    <div class="task-list" id="result-list"></div>
+  </div>
+
+  <!-- All tasks -->
+  <div id="tasks-section">
+    <div class="section-header">
+      <div class="section-title">📋 전체 태스크</div>
+      <button onclick="loadAllTasks()" style="background:none;border:none;font-size:13px;color:var(--text-03);cursor:pointer;">새로고침</button>
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="setFilter('all', this)">전체</button>
+      <button class="filter-tab" onclick="setFilter('todo', this)">미완료</button>
+      <button class="filter-tab" onclick="setFilter('done', this)">완료</button>
+    </div>
+    <div id="all-tasks-list">
+      <div class="empty-state">
+        <div class="emoji">💭</div>
+        <p>아직 태스크가 없어요.<br>목표를 입력해 Copilot에게 맡겨보세요!</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = '';
+  let currentFilter = 'all';
+  let allTasks = [];
+
+  // ── Auto-resize textarea ──
+  const goalInput = document.getElementById('goal-input');
+  goalInput.addEventListener('input', () => {
+    goalInput.style.height = 'auto';
+    goalInput.style.height = Math.min(goalInput.scrollHeight, 140) + 'px';
+  });
+  goalInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleBreakdown();
+  });
+
+  // ── Toast ──
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ── Breakdown ──
+  async function handleBreakdown() {
+    const goal = goalInput.value.trim();
+    if (!goal) { showToast('목표를 입력해주세요!'); return; }
+
+    const btn = document.getElementById('breakdown-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span>⏳</span> 분석 중...';
+
+    document.getElementById('error-section').style.display = 'none';
+    document.getElementById('result-section').style.display = 'none';
+    document.getElementById('loading-goal-text').textContent = `"${goal}"`;
+    document.getElementById('loading-section').style.display = 'block';
+
+    try {
+      const res = await fetch(`${API}/ai/breakdown?save=true`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal, model: 'gpt-4.1' })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      document.getElementById('loading-section').style.display = 'none';
+      renderResult(data);
+      goalInput.value = '';
+      goalInput.style.height = 'auto';
+      await loadAllTasks();
+      showToast(`✅ ${data.subtasks.length}개 태스크로 분해됐어요!`);
+    } catch (err) {
+      document.getElementById('loading-section').style.display = 'none';
+      document.getElementById('error-text').textContent = `Copilot 오류: ${err.message}`;
+      document.getElementById('error-section').style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<span>⚡</span> 분해하기';
+    }
+  }
+
+  function renderResult(data) {
+    const badge = document.getElementById('result-goal-badge');
+    badge.textContent = data.goal.length > 20 ? data.goal.slice(0, 20) + '…' : data.goal;
+    document.getElementById('result-count').textContent = `${data.subtasks.length}개`;
+
+    const list = document.getElementById('result-list');
+    list.innerHTML = '';
+    data.subtasks.forEach((t, i) => {
+      list.innerHTML += taskCardHTML({ title: t.title, detail: t.detail, priority: t.priority, status: 'todo' }, null, i * 60);
+    });
+    document.getElementById('result-section').style.display = 'block';
+    document.getElementById('result-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── All tasks ──
+  async function loadAllTasks() {
+    try {
+      const res = await fetch(`${API}/tasks/`);
+      allTasks = await res.json();
+      updateTaskCount();
+      renderAllTasks();
+    } catch (e) {
+      console.error('태스크 로드 실패:', e);
+    }
+  }
+
+  function updateTaskCount() {
+    const todo = allTasks.filter(t => t.status !== 'done').length;
+    document.getElementById('task-count').textContent = `${todo} tasks`;
+  }
+
+  function setFilter(f, el) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    renderAllTasks();
+  }
+
+  function renderAllTasks() {
+    const filtered = currentFilter === 'all' ? allTasks
+      : currentFilter === 'done' ? allTasks.filter(t => t.status === 'done')
+      : allTasks.filter(t => t.status !== 'done');
+
+    const container = document.getElementById('all-tasks-list');
+    if (filtered.length === 0) {
+      const msgs = {
+        all: ['💭', '아직 태스크가 없어요.<br>목표를 입력해 Copilot에게 맡겨보세요!'],
+        todo: ['🎉', '미완료 태스크가 없어요!<br>모든 작업을 완료했네요 🏆'],
+        done: ['📭', '완료된 태스크가 없어요.<br>열심히 해봐요!']
+      };
+      const [emoji, msg] = msgs[currentFilter];
+      container.innerHTML = `<div class="empty-state"><div class="emoji">${emoji}</div><p>${msg}</p></div>`;
+      return;
+    }
+
+    container.innerHTML = filtered.map((t, i) => taskCardHTML(t, t.id, i * 40)).join('');
+  }
+
+  function taskCardHTML(t, id, delay = 0) {
+    const isDone = t.status === 'done';
+    const badge = { high: '🔴 높음', medium: '🟠 중간', low: '🟢 낮음' }[t.priority] || t.priority;
+    const badgeClass = { high: 'badge-high', medium: 'badge-medium', low: 'badge-low' }[t.priority] || 'badge-medium';
+    const actions = id ? `
+      <div class="task-actions">
+        <button class="btn-icon delete" onclick="deleteTask(${id})" title="삭제">🗑️</button>
+      </div>` : '';
+
+    return `
+      <div class="task-card ${isDone ? 'done' : ''}" style="animation-delay:${delay}ms" id="task-card-${id || ''}">
+        <div class="task-check ${isDone ? 'checked' : ''}" onclick="${id ? `toggleTask(${id})` : ''}"></div>
+        <div class="task-body">
+          <div class="task-title">${escapeHTML(t.title)}</div>
+          ${t.detail ? `<div class="task-detail">${escapeHTML(t.detail)}</div>` : ''}
+          <div class="task-footer">
+            <span class="badge ${badgeClass}">${badge}</span>
+            ${isDone ? '<span class="badge badge-done">✓ 완료</span>' : ''}
+          </div>
+        </div>
+        ${actions}
+      </div>`;
+  }
+
+  async function toggleTask(id) {
+    const task = allTasks.find(t => t.id === id);
+    if (!task) return;
+    const newStatus = task.status === 'done' ? 'todo' : 'done';
+    try {
+      await fetch(`${API}/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      task.status = newStatus;
+      updateTaskCount();
+      renderAllTasks();
+      showToast(newStatus === 'done' ? '✅ 완료!' : '↩️ 미완료로 변경');
+    } catch (e) {
+      showToast('오류가 발생했어요');
+    }
+  }
+
+  async function deleteTask(id) {
+    if (!confirm('이 태스크를 삭제할까요?')) return;
+    try {
+      await fetch(`${API}/tasks/${id}`, { method: 'DELETE' });
+      allTasks = allTasks.filter(t => t.id !== id);
+      updateTaskCount();
+      renderAllTasks();
+      showToast('🗑️ 삭제됐어요');
+    } catch (e) {
+      showToast('삭제 중 오류가 발생했어요');
+    }
+  }
+
+  // ── Speech / mic ──
+  let mediaRecorder = null;
+  let audioChunks = [];
+
+  async function toggleMic() {
+    const btn = document.getElementById('mic-btn');
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop();
+      btn.classList.remove('recording');
+      btn.title = '음성 입력';
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const blob = new Blob(audioChunks, { type: 'audio/wav' });
+        await sendAudio(blob);
+      };
+      mediaRecorder.start();
+      btn.classList.add('recording');
+      btn.title = '녹음 중... 클릭해서 중지';
+      showToast('🎙️ 녹음 중... 다시 클릭하면 완료');
+    } catch (e) {
+      showToast('마이크 권한이 필요해요');
+    }
+  }
+
+  async function sendAudio(blob) {
+    showToast('🔍 음성 인식 중...');
+    const formData = new FormData();
+    formData.append('file', blob, 'recording.wav');
+    try {
+      const res = await fetch(`${API}/speech/transcribe`, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.success && data.text) {
+        goalInput.value = data.text;
+        goalInput.dispatchEvent(new Event('input'));
+        showToast(`📝 "${data.text}"`);
+      } else {
+        showToast('음성을 인식하지 못했어요');
+      }
+    } catch (e) {
+      showToast('음성 인식 서비스 연결 실패');
+    }
+  }
+
+  function escapeHTML(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Init ──
+  loadAllTasks();
+</script>
+</body>
+</html>
