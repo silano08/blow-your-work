@@ -1,4 +1,4 @@
-name: Deploy to Azure VM
+name: Deploy to Azure
 
 on:
   push:
@@ -6,34 +6,62 @@ on:
   workflow_dispatch:
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Azure Login
+        uses: azure/login@v2
         with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          script: |
-            set -e
-            cd ~/blow-your-work
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-            echo "▶ Pulling latest code..."
-            git pull origin main
+      - name: Login to ACR
+        run: az acr login --name bywtestacr0620
 
-            echo "▶ Installing dependencies..."
-            source .venv/bin/activate
-            pip install -r requirements.txt --quiet
+      - name: Build & Push (linux/amd64)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: bywtestacr0620.azurecr.io/byw-app:latest
+          cache-from: type=registry,ref=bywtestacr0620.azurecr.io/byw-app:cache
+          cache-to: type=registry,ref=bywtestacr0620.azurecr.io/byw-app:cache,mode=max
 
-            echo "▶ Restarting service..."
-            sudo systemctl restart blow-your-work
+      - name: Redeploy on Azure Container Instances
+        run: |
+          ACR_PASS=$(az acr credential show --name bywtestacr0620 --query passwords[0].value -o tsv)
 
-            echo "▶ Checking health..."
-            sleep 3
-            curl -sf http://localhost:8000/health || (sudo journalctl -u blow-your-work -n 20 && exit 1)
+          az container delete \
+            --name byw-app \
+            --resource-group byw-test-rg \
+            --yes || true
 
-            echo "✅ Deployment complete!"
+          az container create \
+            --name byw-app \
+            --resource-group byw-test-rg \
+            --image bywtestacr0620.azurecr.io/byw-app:latest \
+            --registry-login-server bywtestacr0620.azurecr.io \
+            --registry-username bywtestacr0620 \
+            --registry-password "$ACR_PASS" \
+            --cpu 1 --memory 1.5 \
+            --ports 80 \
+            --ip-address Public \
+            --os-type Linux \
+            --location eastasia \
+            --environment-variables \
+              GITHUB_TOKEN="${{ secrets.GH_TOKEN }}" \
+              AZURE_SPEECH_REGION="koreacentral" \
+            --restart-policy Always
+
+      - name: Health Check & Print URL
+        run: |
+          sleep 15
+          IP=$(az container show --name byw-app --resource-group byw-test-rg --query ipAddress.ip -o tsv)
+          echo "🚀 Deployed at: http://$IP"
+          curl -sf "http://$IP/health" && echo "✅ Health check passed!"
