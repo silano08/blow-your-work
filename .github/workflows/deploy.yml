@@ -67,8 +67,8 @@ jobs:
             --location $LOCATION \
             --environment-variables \
               GITHUB_TOKEN="${{ secrets.GH_TOKEN }}" \
-              GITHUB_CLIENT_ID="${{ secrets.GITHUB_CLIENT_ID }}" \
-              GITHUB_CLIENT_SECRET="${{ secrets.GITHUB_CLIENT_SECRET }}" \
+              GITHUB_CLIENT_ID="${{ secrets.GH_CLIENT_ID }}" \
+              GITHUB_CLIENT_SECRET="${{ secrets.GH_CLIENT_SECRET }}" \
               FRONTEND_URL="http://${DNS_LABEL}.${LOCATION}.azurecontainer.io" \
             --restart-policy Always
 
