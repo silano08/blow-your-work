@@ -117,7 +117,7 @@ async def _build_daily_summary(db: aiosqlite.Connection, team_id: int, target_da
 
     blocks.append({
         "type": "context",
-        "elements": [{"type": "mrkdwn", "text": f"_TeamFlow AI · {datetime.now().strftime('%Y-%m-%d %H:%M')} 발송_"}],
+        "elements": [{"type": "mrkdwn", "text": f"_Hivemind AI · {datetime.now().strftime('%Y-%m-%d %H:%M')} 발송_"}],
     })
 
     return {"blocks": blocks}
@@ -164,13 +164,13 @@ async def _build_reminder(username: str, team_name: str) -> dict:
                     "text": (
                         f"⏰ *{username}님, 오늘 할일을 아직 등록하지 않으셨어요!*\n"
                         f"_{team_name}의 팀원들이 기다리고 있어요. "
-                        f"TeamFlow에서 오늘의 할일을 작성해주세요_ 💪"
+                        f"Hivemind에서 오늘의 할일을 작성해주세요_ 💪"
                     ),
                 },
             },
             {
                 "type": "context",
-                "elements": [{"type": "mrkdwn", "text": "_TeamFlow AI 자동 리마인더_"}],
+                "elements": [{"type": "mrkdwn", "text": "_Hivemind AI 자동 리마인더_"}],
             },
         ]
     }

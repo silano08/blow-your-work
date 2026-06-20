@@ -34,8 +34,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="TeamFlow — AI 팀 생산성 플랫폼",
-    description="팀의 할일과 목표를 Copilot SDK AI로 연결하는 생산성 앱",
+    title="Hivemind — 집단지성이 목표를 완성한다",
+    description="전사 업무 연관 그래프 · AI 의사결정 감사 · 비동기 데일리 스크럼",
     version=VERSION,
     lifespan=lifespan,
 )

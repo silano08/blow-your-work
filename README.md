@@ -1,8 +1,10 @@
-# 💥 TeamFlow
+# 🧠 Hivemind
 
-팀의 할일과 목표를 하나로 연결하는 **AI 생산성 플랫폼**
+**집단지성이 목표를 완성한다**
 
-🌐 **Live**: http://20.255.215.87 | 📖 **API Docs**: http://20.255.215.87/docs
+모든 팀원의 데일리 할일이 회사 목표와 얼마나 연결됐는지 AI가 분석하고, 전사 그래프로 실시간 가시화합니다.
+
+🌐 **Live**: http://byw-teamflow.eastasia.azurecontainer.io | 📖 **API Docs**: http://byw-teamflow.eastasia.azurecontainer.io/docs
 
 ---
 
