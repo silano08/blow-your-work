@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ACR_NAME: bywtestacr0620
-      ACI_NAME: byw-app
+      ACA_NAME: byw-app
+      ACA_ENV: byw-env
       RG: byw-test-rg
       LOCATION: eastasia
-      DNS_LABEL: byw-teamflow
       IMAGE: bywtestacr0620.azurecr.io/byw-app:latest
 
     steps:
@@ -41,53 +41,64 @@ jobs:
           cache-from: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/byw-app:cache
           cache-to: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/byw-app:cache,mode=max
 
-      - name: Redeploy ACI (FQDN 고정)
+      - name: Deploy to Azure Container Apps
         run: |
           ACR_PASS=$(az acr credential show --name $ACR_NAME --query passwords[0].value -o tsv)
 
-          # 기존 컨테이너 삭제
-          az container delete \
-            --name $ACI_NAME \
-            --resource-group $RG \
-            --yes 2>/dev/null || true
+          # Container App이 이미 있으면 update, 없으면 create
+          if az containerapp show --name $ACA_NAME --resource-group $RG &>/dev/null; then
+            az containerapp update \
+              --name $ACA_NAME \
+              --resource-group $RG \
+              --image $IMAGE \
+              --set-env-vars \
+                GITHUB_TOKEN="${{ secrets.GH_TOKEN }}" \
+                GITHUB_CLIENT_ID="${{ secrets.GH_CLIENT_ID }}" \
+                GITHUB_CLIENT_SECRET="${{ secrets.GH_CLIENT_SECRET }}"
+          else
+            az containerapp create \
+              --name $ACA_NAME \
+              --resource-group $RG \
+              --environment $ACA_ENV \
+              --image $IMAGE \
+              --registry-server ${ACR_NAME}.azurecr.io \
+              --registry-username $ACR_NAME \
+              --registry-password "$ACR_PASS" \
+              --target-port 80 \
+              --ingress external \
+              --cpu 0.5 --memory 1.0Gi \
+              --min-replicas 1 --max-replicas 1 \
+              --env-vars \
+                GITHUB_TOKEN="${{ secrets.GH_TOKEN }}" \
+                GITHUB_CLIENT_ID="${{ secrets.GH_CLIENT_ID }}" \
+                GITHUB_CLIENT_SECRET="${{ secrets.GH_CLIENT_SECRET }}"
+          fi
 
-          # dns-name-label 포함 재생성 → FQDN 고정
-          az container create \
-            --name $ACI_NAME \
+          # FQDN 출력
+          FQDN=$(az containerapp show --name $ACA_NAME --resource-group $RG \
+            --query properties.configuration.ingress.fqdn -o tsv)
+          echo "🌐 FQDN: https://$FQDN"
+          echo "ACA_FQDN=https://$FQDN" >> $GITHUB_ENV
+
+          # FRONTEND_URL 업데이트
+          az containerapp update \
+            --name $ACA_NAME \
             --resource-group $RG \
-            --image $IMAGE \
-            --registry-login-server ${ACR_NAME}.azurecr.io \
-            --registry-username $ACR_NAME \
-            --registry-password "$ACR_PASS" \
-            --cpu 1 --memory 1.5 \
-            --ports 80 \
-            --ip-address Public \
-            --dns-name-label $DNS_LABEL \
-            --os-type Linux \
-            --location $LOCATION \
-            --environment-variables \
-              GITHUB_TOKEN="${{ secrets.GH_TOKEN }}" \
-              GITHUB_CLIENT_ID="${{ secrets.GH_CLIENT_ID }}" \
-              GITHUB_CLIENT_SECRET="${{ secrets.GH_CLIENT_SECRET }}" \
-              FRONTEND_URL="http://${DNS_LABEL}.${LOCATION}.azurecontainer.io" \
-            --restart-policy Always
+            --set-env-vars FRONTEND_URL="https://$FQDN" 2>/dev/null || true
 
       - name: Health Check
         run: |
-          FQDN="${DNS_LABEL}.${LOCATION}.azurecontainer.io"
-          echo "🌐 FQDN: http://$FQDN"
-
-          echo "⏳ Waiting for container to be ready..."
-          for i in $(seq 1 12); do
+          echo "⏳ Waiting for container app to be ready..."
+          for i in $(seq 1 18); do
             sleep 10
-            HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 "http://$FQDN/health" || echo "000")
+            HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$ACA_FQDN/health" || echo "000")
             echo "  attempt $i → HTTP $HTTP"
             if [ "$HTTP" = "200" ]; then
               echo "✅ Health check passed!"
-              curl -s "http://$FQDN/health" | python3 -m json.tool
+              curl -s "$ACA_FQDN/health" | python3 -m json.tool
               exit 0
             fi
           done
-          echo "❌ Health check failed after 2 minutes"
-          az container logs --name $ACI_NAME --resource-group $RG || true
+          echo "❌ Health check failed"
+          az containerapp logs show --name $ACA_NAME --resource-group $RG || true
           exit 1

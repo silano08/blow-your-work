@@ -16,14 +16,14 @@ Analyze whether the todo contributes to any of the premises.
 Respond ONLY with a valid JSON object (no markdown, no extra text):
 {
   "premise_id": <number or null>,
-  "relation": "grand" | "small" | "none",
+  "relation": "initiative" | "goal" | "none",
   "confidence": <float 0.0-1.0>,
   "reason": "<Korean explanation in 1-2 sentences>"
 }
 
 Rules:
-- "grand" = todo directly contributes to a 대전제 category
-- "small" = todo directly contributes to a 소전제 specific goal
+- "initiative" = todo directly contributes to an initiative (대전제 category)
+- "goal" = todo directly contributes to a specific goal (소전제)
 - "none" = no clear connection
 - Choose the MOST relevant premise if multiple match
 - Be strict: confidence > 0.7 only for clear matches
