@@ -37,9 +37,10 @@
     <h1>💥 TeamFlow — 3D 지식 네트워크</h1>
     <div class="legend">
       <div class="leg"><span class="dot" style="background:#ff5500"></span>나</div>
-      <div class="leg"><span class="dot" style="background:#4d9eff"></span>팀원</div>
-      <div class="leg"><span class="dot" style="background:#9b59ff"></span>다른팀</div>
-      <div class="leg"><span class="dot" style="background:#00e5a0"></span>전제</div>
+      <div class="leg"><span class="dot" style="background:#4d9eff"></span>개발팀원</div>
+      <div class="leg"><span class="dot" style="background:#9b59ff"></span>타팀</div>
+      <div class="leg"><span class="dot" style="background:#00e5a0"></span>이니셔티브</div>
+      <div class="leg"><span class="dot" style="background:#ffd166"></span>목표</div>
     </div>
     <span style="font-size:11px;color:rgba(255,255,255,0.3);margin-left:16px">드래그·줌·클릭</span>
   </div>
@@ -58,35 +59,104 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ── 데이터 ──────────────────────────────────────────────────────────────
-const NODES = [
-  { id:'t1', label:'DML 자동화 스크립트', group:'me', size:1.4, detail:'수동 DB 작업 자동화' },
-  { id:'t2', label:'Slack 봇 템플릿', group:'me', size:1.2, detail:'매일 답장 자동화' },
-  { id:'t3', label:'기여도 문서 업데이트', group:'me', size:1.1, detail:'이번 주 현황 정리' },
-  { id:'t4', label:'결제 오류 알림', group:'team', size:1.3, person:'이수아' },
-  { id:'t5', label:'정산 쿼리 자동화', group:'team', size:1.1, person:'이수아' },
-  { id:'t6', label:'GitHub Actions 배포', group:'team', size:1.5, person:'박민준' },
-  { id:'t7', label:'Docker 빌드 최적화', group:'team', size:1.1, person:'박민준' },
-  { id:'t8', label:'UX 인터뷰 2건', group:'team', size:1.2, person:'최서연' },
-  { id:'t9', label:'인터뷰 인사이트 문서', group:'team', size:1.0, person:'최서연' },
-  { id:'t10', label:'AB 테스트 분석', group:'other', size:1.0, person:'정태양' },
-  { id:'t11', label:'마케팅 대시보드', group:'other', size:1.0, person:'정태양' },
-  { id:'p1', label:'반복업무 자동화', group:'premise', size:2.2, ptype:'grand' },
-  { id:'p2', label:'커뮤니케이션 효율화', group:'premise', size:1.9, ptype:'grand' },
-  { id:'p3', label:'결제 안정성', group:'premise', size:2.0, ptype:'grand' },
-  { id:'p4', label:'UX 개선', group:'premise', size:1.8, ptype:'grand' },
-  { id:'p5', label:'DML 처리 자동화', group:'premise', size:1.5, ptype:'small' },
-  { id:'p6', label:'매일 답장 자동화', group:'premise', size:1.4, ptype:'small' },
+// 팀 정의
+const TEAMS = {
+  dev:  { name:'개발팀',  color:0x4d9eff, hex:'#4d9eff' },
+  plan: { name:'기획팀',  color:0xb45eff, hex:'#b45eff' },
+  sales:{ name:'영업팀',  color:0x00c896, hex:'#00c896' },
+  acct: { name:'회계팀',  color:0xff9f43, hex:'#ff9f43' },
+};
+
+// 이니셔티브 (상위 목표 — 가장 큰 노드)
+const INITIATIVES = [
+  { id:'i1', label:'반복업무 전면 자동화', group:'initiative', size:2.6, team:'dev',  desc:'DML·배포·알림 등 수작업 90% 제거' },
+  { id:'i2', label:'커뮤니케이션 효율화', group:'initiative', size:2.3, team:'dev',  desc:'Slack 봇·리포트 자동 발송' },
+  { id:'i3', label:'결제·정산 안정성 강화', group:'initiative', size:2.4, team:'acct', desc:'오류 0건, 정산 자동화' },
+  { id:'i4', label:'고객 UX 개선',         group:'initiative', size:2.2, team:'plan', desc:'인터뷰→제품 반영 사이클 단축' },
+  { id:'i5', label:'Q3 매출 목표 달성',    group:'initiative', size:2.5, team:'sales', desc:'신규 계약 15건, ARR 30% 성장' },
 ];
 
-const EDGES = [
-  ['t1','p5'],['t2','p6'],['t3','p1'],['t4','p3'],['t5','p5'],
-  ['t6','p1'],['t7','p1'],['t8','p4'],['t9','p4'],['t10','p4'],
-  ['p5','p1'],['p6','p2'],
-  ['t1','t5'],['t6','t7'],['t8','t9'],['t3','t10'],
+// 목표 (중간 노드)
+const GOALS = [
+  { id:'g1', label:'DML 처리 자동화',     group:'goal', size:1.7, parent:'i1', team:'dev' },
+  { id:'g2', label:'CI/CD 파이프라인 구축', group:'goal', size:1.6, parent:'i1', team:'dev' },
+  { id:'g3', label:'Slack 일일 리포트',    group:'goal', size:1.5, parent:'i2', team:'dev' },
+  { id:'g4', label:'매일 답장 자동화',     group:'goal', size:1.4, parent:'i2', team:'dev' },
+  { id:'g5', label:'결제 오류 실시간 감지', group:'goal', size:1.6, parent:'i3', team:'acct' },
+  { id:'g6', label:'정산 쿼리 자동화',     group:'goal', size:1.5, parent:'i3', team:'acct' },
+  { id:'g7', label:'UX 인터뷰 인사이트',  group:'goal', size:1.5, parent:'i4', team:'plan' },
+  { id:'g8', label:'온보딩 플로우 개선',   group:'goal', size:1.4, parent:'i4', team:'plan' },
+  { id:'g9', label:'리드 전환율 개선',     group:'goal', size:1.6, parent:'i5', team:'sales' },
+  { id:'g10',label:'계약서 전자화',        group:'goal', size:1.4, parent:'i5', team:'sales' },
 ];
+
+// 할일 노드 (팀원별)
+const TODOS = [
+  // 개발팀 — 김도현(me)
+  { id:'t1',  label:'DML 자동화 스크립트 작성', group:'me',    size:1.3, person:'김도현', team:'dev',   goal:'g1' },
+  { id:'t2',  label:'자동화 테스트 케이스 추가', group:'me',    size:1.1, person:'김도현', team:'dev',   goal:'g1' },
+  { id:'t3',  label:'Slack 봇 리포트 연동',      group:'me',    size:1.2, person:'김도현', team:'dev',   goal:'g3' },
+  // 개발팀 — 박민준
+  { id:'t4',  label:'GitHub Actions 배포 설정', group:'team',  size:1.4, person:'박민준', team:'dev',   goal:'g2' },
+  { id:'t5',  label:'Docker 빌드 최적화',        group:'team',  size:1.1, person:'박민준', team:'dev',   goal:'g2' },
+  { id:'t6',  label:'PR 자동 머지 설정',         group:'team',  size:1.0, person:'박민준', team:'dev',   goal:'g2' },
+  // 개발팀 — 이지훈
+  { id:'t7',  label:'API 응답 캐싱 개선',        group:'team',  size:1.1, person:'이지훈', team:'dev',   goal:'g1' },
+  { id:'t8',  label:'DB 인덱스 최적화',          group:'team',  size:1.2, person:'이지훈', team:'dev',   goal:'g1' },
+  // 기획팀 — 최서연
+  { id:'t9',  label:'UX 인터뷰 2건 진행',        group:'other', size:1.3, person:'최서연', team:'plan',  goal:'g7' },
+  { id:'t10', label:'인터뷰 인사이트 문서화',     group:'other', size:1.1, person:'최서연', team:'plan',  goal:'g7' },
+  { id:'t11', label:'온보딩 화면 와이어프레임',   group:'other', size:1.2, person:'최서연', team:'plan',  goal:'g8' },
+  // 기획팀 — 한지민
+  { id:'t12', label:'AB 테스트 시나리오 작성',    group:'other', size:1.0, person:'한지민', team:'plan',  goal:'g8' },
+  { id:'t13', label:'사용성 테스트 결과 분석',    group:'other', size:1.1, person:'한지민', team:'plan',  goal:'g7' },
+  // 영업팀 — 정태양
+  { id:'t14', label:'신규 리드 10건 발굴',        group:'other', size:1.3, person:'정태양', team:'sales', goal:'g9' },
+  { id:'t15', label:'데모 영상 제작',             group:'other', size:1.0, person:'정태양', team:'sales', goal:'g9' },
+  // 영업팀 — 오현우
+  { id:'t16', label:'계약서 전자서명 도입',        group:'other', size:1.2, person:'오현우', team:'sales', goal:'g10' },
+  { id:'t17', label:'CRM 데이터 업데이트',         group:'other', size:1.0, person:'오현우', team:'sales', goal:'g9' },
+  // 회계팀 — 이수아
+  { id:'t18', label:'결제 오류 알림 시스템 구축',  group:'other', size:1.3, person:'이수아', team:'acct',  goal:'g5' },
+  { id:'t19', label:'정산 쿼리 자동화 스크립트',   group:'other', size:1.2, person:'이수아', team:'acct',  goal:'g6' },
+  // 회계팀 — 윤성진
+  { id:'t20', label:'월말 정산 보고서 자동화',     group:'other', size:1.1, person:'윤성진', team:'acct',  goal:'g6' },
+  { id:'t21', label:'이상 거래 탐지 룰 작성',     group:'other', size:1.0, person:'윤성진', team:'acct',  goal:'g5' },
+];
+
+const NODES = [...INITIATIVES, ...GOALS, ...TODOS];
+
+// 엣지: 할일→목표, 목표→이니셔티브, 팀간 협업
+const EDGES = [
+  // 할일 → 목표
+  ...TODOS.map(t => [t.id, t.goal]),
+  // 목표 → 이니셔티브
+  ...GOALS.map(g => [g.id, g.parent]),
+  // 팀간 협업 (크로스팀 엣지)
+  ['t1','t19'],   // 개발-회계: DML 자동화 공유
+  ['t3','t18'],   // 개발-회계: Slack 알림 연동
+  ['t4','t16'],   // 개발-영업: 계약서 전자화 API
+  ['t9','t12'],   // 기획-기획: 인터뷰↔AB테스트
+  ['t10','t11'],  // 기획 내부: 인사이트→와이어프레임
+  ['t14','t9'],   // 영업-기획: 리드 인터뷰 협업
+  ['g1','g6'],    // 자동화 목표 공유
+  ['g3','g5'],    // Slack 알림↔결제 감지 연동
+  ['i1','i3'],    // 이니셔티브 연결: 자동화→결제안정성
+];
+
+// 컬러 매핑
+const GROUP_COLOR = {
+  me:         { main:0xff5500, hex:'#ff5500' },
+  team:       { main:0x4d9eff, hex:'#4d9eff' },
+  other:      { main:0x9b59ff, hex:'#9b59ff' },
+  initiative: { main:0x00e5a0, hex:'#00e5a0' },
+  goal:       { main:0xffd166, hex:'#ffd166' },
+};
+const COLOR     = Object.fromEntries(Object.entries(GROUP_COLOR).map(([k,v])=>[k,v.main]));
+const COLOR_HEX = Object.fromEntries(Object.entries(GROUP_COLOR).map(([k,v])=>[k,v.hex]));
 
 const COLOR = { me:0xff5500, team:0x4d9eff, other:0x9b59ff, premise:0x00e5a0 };
-const COLOR_HEX = { me:'#ff5500', team:'#4d9eff', other:'#9b59ff', premise:'#00e5a0' };
+const COLOR_HEX_ORIG = COLOR_HEX; // alias
 
 // ── Three.js 셋업 ────────────────────────────────────────────────────────
 const W = window.innerWidth, H = window.innerHeight;
@@ -137,9 +207,10 @@ const meshes = [];
 const labelSprites = [];
 NODES.forEach(n => {
   const geo = new THREE.SphereGeometry(n.size, 32, 32);
+  const col = COLOR[n.group] || 0x888888;
   const mat = new THREE.MeshPhongMaterial({
-    color: COLOR[n.group],
-    emissive: COLOR[n.group],
+    color: col,
+    emissive: col,
     emissiveIntensity: 0.4,
     transparent: true,
     opacity: 0.9,
@@ -152,8 +223,8 @@ NODES.forEach(n => {
   meshes.push(mesh);
   n.mesh = mesh;
 
-  // glow ring (대전제/소전제)
-  if (n.group === 'premise') {
+  // glow ring (이니셔티브/목표)
+  if (n.group === 'initiative' || n.group === 'goal') {
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(n.size+0.3, n.size+0.8, 32),
       new THREE.MeshBasicMaterial({ color: COLOR[n.group], side: THREE.DoubleSide, transparent:true, opacity:0.3 })
@@ -221,17 +292,29 @@ function showInfo(mesh) {
   selectedMesh = mesh;
   const n = mesh.userData;
   document.getElementById('ip-title').textContent = n.label;
-  document.getElementById('ip-type').textContent =
-    n.group==='premise'?(n.ptype==='grand'?'🎯 대전제':'📌 소전제'):
-    n.group==='me'?`👤 나 · ${n.detail||''}`:
-    n.group==='team'?`👥 팀원 ${n.person}`:`🔗 타팀 ${n.person}`;
-  document.getElementById('ip-type').style.color = COLOR_HEX[n.group];
+
+  let typeLabel = '';
+  if (n.group === 'initiative') {
+    typeLabel = `🚀 이니셔티브 · ${TEAMS[n.team]?.name||''} · ${n.desc||''}`;
+  } else if (n.group === 'goal') {
+    const parentNode = nodeMap[n.parent];
+    typeLabel = `🎯 목표 · ${TEAMS[n.team]?.name||''} → ${parentNode?.label||''}`;
+  } else if (n.group === 'me') {
+    typeLabel = `👤 나 (${n.person}) · 개발팀`;
+  } else if (n.group === 'team') {
+    typeLabel = `👥 팀원 ${n.person} · 개발팀`;
+  } else {
+    typeLabel = `🔗 ${n.person} · ${TEAMS[n.team]?.name||'타팀'}`;
+  }
+  const colorHex = COLOR_HEX[n.group] || '#888';
+  document.getElementById('ip-type').textContent = typeLabel;
+  document.getElementById('ip-type').style.color = colorHex;
 
   const connected = EDGES.filter(([a,b]) => a===n.id||b===n.id)
-    .map(([a,b]) => nodeMap[a===n.id?b:a]);
+    .map(([a,b]) => nodeMap[a===n.id?b:a]).filter(Boolean);
   document.getElementById('ip-list').innerHTML = connected.map(c => `
     <div class="ip-node" onclick="focusNode('${c.id}')">
-      <div class="ip-dot" style="background:${COLOR_HEX[c.group]}"></div>
+      <div class="ip-dot" style="background:${COLOR_HEX[c.group]||'#888'}"></div>
       <span>${c.label}</span>
     </div>`).join('');
 
