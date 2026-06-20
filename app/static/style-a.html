@@ -1,0 +1,159 @@
+<!DOCTYPE html><html lang="ko"><head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>스타일 A — 크리스탈 코어</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#020408;overflow:hidden;height:100vh;font-family:-apple-system,sans-serif;color:#fff}
+#label{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:100px;padding:8px 22px;font-size:13px;font-weight:700;letter-spacing:0.5px}
+#badge{position:fixed;top:56px;left:50%;transform:translateX(-50%);font-size:11px;color:rgba(255,255,255,0.35)}
+#pick{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#4d9eff,#b45eff);border:none;border-radius:100px;padding:12px 32px;font-size:13px;font-weight:700;color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(77,158,255,0.4)}
+</style></head><body>
+<div id="label">✨ 스타일 A — 크리스탈 코어</div>
+<div id="badge">내부 코어 + 반투명 외피 + 다이아몬드 링</div>
+<button id="pick" onclick="alert('A 선택!')">이 스타일 선택</button>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const W=window.innerWidth,H=window.innerHeight;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x020408);
+scene.fog=new THREE.FogExp2(0x020408,0.008);
+const camera=new THREE.PerspectiveCamera(55,W/H,0.1,500);
+camera.position.set(0,0,70);
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(W,H);
+document.body.appendChild(renderer.domElement);
+
+// 배경 별
+const sg=new THREE.BufferGeometry();
+const sp=new Float32Array(6000);
+for(let i=0;i<6000;i++)sp[i]=(Math.random()-0.5)*600;
+sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:0.2,opacity:0.5,transparent:true})));
+
+// 조명
+scene.add(new THREE.AmbientLight(0x0a0a1a,5));
+const pl1=new THREE.PointLight(0x4488ff,3,150);pl1.position.set(30,30,30);scene.add(pl1);
+const pl2=new THREE.PointLight(0xff44aa,2,120);pl2.position.set(-30,-20,20);scene.add(pl2);
+const pl3=new THREE.PointLight(0x44ffcc,1.5,100);pl3.position.set(0,-30,-20);scene.add(pl3);
+
+const NODES=[
+  {label:'반복업무 자동화',type:'initiative',color:0x00e5ff,pos:[0,12,0],size:3.2},
+  {label:'결제 안정성 강화',type:'initiative',color:0xff6b9d,pos:[-14,5,5],size:2.8},
+  {label:'Q3 매출 달성',type:'initiative',color:0xffd166,pos:[14,5,-5],size:3.0},
+  {label:'DML 자동화',type:'goal',color:0x4d9eff,pos:[-6,0,8],size:1.8},
+  {label:'CI/CD 구축',type:'goal',color:0x4d9eff,pos:[6,0,8],size:1.7},
+  {label:'결제 오류 감지',type:'goal',color:0xff9f43,pos:[-14,-5,0],size:1.7},
+  {label:'DML 스크립트',type:'todo',color:0x4d9eff,pos:[-10,-10,5],size:1.0,done:true},
+  {label:'Docker 최적화',type:'todo',color:0x4d9eff,pos:[2,-10,5],size:1.0,done:true},
+  {label:'UX 인터뷰',type:'todo',color:0xb45eff,pos:[10,-8,-5],size:1.0,done:false},
+  {label:'신규 리드 발굴',type:'todo',color:0x00c896,pos:[16,-10,2],size:1.0,done:false},
+];
+
+const meshGroup=new THREE.Group();
+scene.add(meshGroup);
+
+NODES.forEach(n=>{
+  const g=new THREE.Group();
+  // 내부 코어 (밝은 고체)
+  const core=new THREE.Mesh(
+    new THREE.SphereGeometry(n.size*0.45,32,32),
+    new THREE.MeshPhongMaterial({color:n.color,emissive:n.color,emissiveIntensity:0.9,shininess:200})
+  );
+  g.add(core);
+  // 중간 반투명 쉘
+  const shell=new THREE.Mesh(
+    new THREE.SphereGeometry(n.size*0.75,32,32),
+    new THREE.MeshPhongMaterial({color:n.color,transparent:true,opacity:0.15,side:THREE.DoubleSide,shininess:100})
+  );
+  g.add(shell);
+  // 외피 (더 투명)
+  const outer=new THREE.Mesh(
+    new THREE.SphereGeometry(n.size,32,32),
+    new THREE.MeshPhongMaterial({color:n.color,transparent:true,opacity:0.06,side:THREE.DoubleSide,shininess:50,wireframe:false})
+  );
+  g.add(outer);
+  // 이니셔티브: 회전 링 3개
+  if(n.type==='initiative'){
+    [0.6,0.85,1.15].forEach((r,i)=>{
+      const ring=new THREE.Mesh(
+        new THREE.TorusGeometry(n.size*r,0.06,8,64),
+        new THREE.MeshBasicMaterial({color:n.color,transparent:true,opacity:0.5-i*0.1})
+      );
+      ring.rotation.x=Math.PI/2*(i%2===0?1:0.5);
+      ring.rotation.z=Math.PI/3*i;
+      ring.userData.rotSpeed={x:0.003*(i+1),y:0.002,z:0.001*(i+1)};
+      g.add(ring);
+      g.userData.rings=g.userData.rings||[];
+      g.userData.rings.push(ring);
+    });
+  }
+  // 목표: 와이어프레임 링
+  if(n.type==='goal'){
+    const wf=new THREE.Mesh(
+      new THREE.SphereGeometry(n.size*1.1,12,12),
+      new THREE.MeshBasicMaterial({color:n.color,wireframe:true,transparent:true,opacity:0.25})
+    );
+    g.add(wf);
+  }
+  // 완료 todo: 체크 느낌의 outer ring
+  if(n.type==='todo'&&n.done){
+    const dr=new THREE.Mesh(
+      new THREE.RingGeometry(n.size*1.2,n.size*1.5,32),
+      new THREE.MeshBasicMaterial({color:0x00e5a0,side:THREE.DoubleSide,transparent:true,opacity:0.6})
+    );
+    g.add(dr);
+  }
+  g.position.set(...n.pos);
+  g.userData.nodeData=n;
+  meshGroup.add(g);
+  n._group=g;
+});
+
+// 엣지
+const EDGES=[[0,3],[0,4],[1,5],[3,6],[3,7],[4,7],[2,9]];
+EDGES.forEach(([a,b])=>{
+  const na=NODES[a],nb=NODES[b];
+  const pts=[];
+  for(let t=0;t<=20;t++){
+    const p=t/20;
+    pts.push(new THREE.Vector3(
+      na.pos[0]*(1-p)+nb.pos[0]*p,
+      na.pos[1]*(1-p)+4*Math.sin(Math.PI*p)+nb.pos[1]*p,
+      na.pos[2]*(1-p)+nb.pos[2]*p
+    ));
+  }
+  const tube=new THREE.Mesh(
+    new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),20,0.07,6,false),
+    new THREE.MeshBasicMaterial({color:0x1a3060,transparent:true,opacity:0.6})
+  );
+  scene.add(tube);
+});
+
+let rotY=0,isDrag=false,lx=0,ly=0;
+renderer.domElement.addEventListener('mousedown',e=>{isDrag=true;lx=e.clientX;ly=e.clientY});
+renderer.domElement.addEventListener('mousemove',e=>{if(!isDrag)return;rotY+=(e.clientX-lx)*0.004;lx=e.clientX;ly=e.clientY});
+renderer.domElement.addEventListener('mouseup',()=>isDrag=false);
+renderer.domElement.addEventListener('wheel',e=>{camera.position.z=Math.max(20,Math.min(120,camera.position.z+e.deltaY*0.05))},{passive:true});
+
+let t=0;
+function animate(){
+  requestAnimationFrame(animate);t+=0.016;
+  if(!isDrag)meshGroup.rotation.y+=0.003;
+  meshGroup.rotation.y+=isDrag?0:0;
+  // 링 회전
+  meshGroup.children.forEach(g=>{
+    (g.userData.rings||[]).forEach(r=>{
+      r.rotation.x+=r.userData.rotSpeed.x;
+      r.rotation.y+=r.userData.rotSpeed.y;
+      r.rotation.z+=r.userData.rotSpeed.z;
+    });
+    // 호흡
+    const nd=g.userData.nodeData;
+    if(nd&&nd.type==='initiative'){const s=1+0.04*Math.sin(t*1.2);g.scale.set(s,s,s);}
+  });
+  renderer.render(scene,camera);
+}
+animate();
+window.addEventListener('resize',()=>{camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight)});
+</script></body></html>

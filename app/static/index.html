@@ -284,6 +284,61 @@
     .btn-icon:hover { background: var(--bg-02); }
     .btn-icon.del:hover { background: var(--high-bg); color: var(--high); }
 
+
+    .async-scrum-banner {
+      display: flex; gap: 0; background: var(--bg-01);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      margin-bottom: 18px; overflow: hidden;
+    }
+    .scrum-row {
+      flex: 1; display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px; border-right: 1px solid var(--border);
+    }
+    .scrum-row:last-child { border-right: none; }
+    .scrum-icon { font-size: 20px; flex-shrink: 0; }
+    .scrum-label { font-size: 11px; color: var(--text-03); margin-bottom: 2px; }
+    .scrum-value { font-size: 13px; font-weight: 700; letter-spacing: -0.02em; }
+    .ai-badge { font-size: 10px; padding: 2px 7px; border-radius: var(--radius-full); font-weight: 600; }
+    .ai-high { background: #E8F9F0; color: #1A9F46; }
+    .ai-mid  { background: var(--primary-bg); color: var(--primary); }
+    .ai-low  { background: var(--bg-03); color: var(--text-03); }
+
+    .audit-stats { display:flex; gap:12px; margin-bottom:18px; flex-wrap:wrap; }
+    .audit-stat-card { flex:1; min-width:100px; background:var(--bg-01); border:1px solid var(--border); border-radius:var(--radius); padding:12px 16px; text-align:center; }
+    .audit-stat-num { font-size:22px; font-weight:700; letter-spacing:-0.03em; }
+    .audit-stat-lbl { font-size:11px; color:var(--text-03); margin-top:2px; }
+    .audit-card { background:var(--bg-01); border:1.5px solid var(--border); border-radius:var(--radius); padding:16px 18px; margin-bottom:12px; }
+    .audit-card.approved { border-color:#1A9F46; }
+    .audit-card.flagged { border-color:var(--high); }
+    .audit-card.overridden { border-color:var(--blue); opacity:0.7; }
+    .audit-type-badge { font-size:10px; font-weight:700; padding:2px 8px; border-radius:var(--radius-full); display:inline-block; margin-bottom:8px; }
+    .atype-todo_match { background:var(--primary-bg); color:var(--primary); }
+    .atype-priority_score { background:#FFF3CD; color:#856404; }
+    .atype-team_assign { background:var(--blue-bg); color:var(--blue); }
+    .atype-anomaly { background:var(--high-bg); color:var(--high); }
+    .audit-input { font-size:13px; font-weight:600; margin-bottom:4px; letter-spacing:-0.02em; }
+    .audit-output { font-size:12px; color:var(--text-02); margin-bottom:8px; }
+    .audit-conf-bar { height:4px; background:var(--bg-03); border-radius:var(--radius-full); margin-bottom:8px; overflow:hidden; }
+    .audit-conf-fill { height:100%; border-radius:var(--radius-full); }
+    .audit-reasoning { font-size:11px; color:var(--text-03); background:var(--bg-02); border-radius:var(--radius-md); padding:8px 10px; margin-bottom:10px; line-height:1.6; display:none; }
+    .audit-reasoning.show { display:block; }
+    .audit-actions { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .btn-audit { height:32px; padding:0 12px; border-radius:var(--radius-md); font-size:12px; font-weight:600; cursor:pointer; border:1.5px solid var(--border); background:var(--bg-01); color:var(--text-02); font-family:inherit; transition:all .15s; }
+    .btn-audit:hover { border-color:var(--primary); color:var(--primary); }
+    .btn-audit.approve:hover { border-color:#1A9F46; color:#1A9F46; background:#E8F9F0; }
+    .btn-audit.flag:hover { border-color:var(--high); color:var(--high); background:var(--high-bg); }
+    .btn-audit.override:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-bg); }
+    .audit-status-chip { font-size:11px; font-weight:700; padding:2px 9px; border-radius:var(--radius-full); margin-left:auto; }
+    .asc-approved { background:#E8F9F0; color:#1A9F46; }
+    .asc-flagged { background:var(--high-bg); color:var(--high); }
+    .asc-pending { background:var(--primary-bg); color:var(--primary); }
+    .asc-overridden { background:var(--blue-bg); color:var(--blue); }
+    .override-form { margin-top:10px; display:none; }
+    .override-form.show { display:block; }
+    .override-input { width:100%; border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:8px 12px; font-size:13px; font-family:inherit; resize:vertical; min-height:64px; margin-bottom:8px; }
+    .override-input:focus { outline:none; border-color:var(--text-02); }
+    .dp-admin-divider { height:1px; background:rgba(248,81,0,0.2); margin:8px 0; }
+
     /* ── Insight ── */
     .insight-stat { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
     .insight-stat:last-child { border-bottom: none; }
@@ -393,6 +448,9 @@
       .member-badges { flex-direction: column; align-items: flex-end; }
       .modal { border-radius: var(--radius-modal) var(--radius-modal) 0 0; }
       .toast { bottom: calc(var(--bottom-nav) + 16px); }
+      .async-scrum-banner { flex-direction: column; }
+      .scrum-row { border-right: none; border-bottom: 1px solid var(--border); }
+      .scrum-row:last-child { border-bottom: none; }
     }
 
     /* ── 반응형: 소형 모바일 (375px 이하) ── */
@@ -428,7 +486,7 @@
   <!-- 모바일 헤더 -->
   <div class="mobile-header">
     <button class="btn-hamburger" onclick="toggleDrawer()" aria-label="메뉴">☰</button>
-    <span class="mobile-page-title" id="mobile-page-title">오늘의 할일</span>
+    <span class="mobile-page-title" id="mobile-page-title">오늘 스크럼</span>
     <div id="mobile-avatar" style="width:32px;height:32px;border-radius:50%;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden;"></div>
   </div>
 
@@ -440,14 +498,15 @@
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo"><span>💥</span> TeamFlow</div>
       <div class="sidebar-section">나의 작업</div>
-      <button class="nav-item active" onclick="showPage('home', this)"><span class="nav-icon">🏠</span> 오늘의 할일</button>
-      <button class="nav-item" onclick="showPage('history', this)"><span class="nav-icon">📚</span> 히스토리</button>
-      <button class="nav-item" onclick="showPage('insight', this)"><span class="nav-icon">📊</span> 주간 인사이트</button>
+      <button class="nav-item active" onclick="showPage('home',this)"><span class="nav-icon">🏠</span> 오늘 스크럼</button>
       <div class="sidebar-section">팀</div>
-      <button class="nav-item" onclick="showPage('team', this)"><span class="nav-icon">👥</span> 팀 대시보드</button>
-      <button class="nav-item" onclick="showPage('heatmap', this)"><span class="nav-icon">🔥</span> 기여 히트맵</button>
+      <button class="nav-item" onclick="showPage('team',this)"><span class="nav-icon">👥</span> 팀 현황</button>
       <div class="sidebar-section">목표</div>
-      <button class="nav-item" onclick="showPage('premises', this)"><span class="nav-icon">🎯</span> 이니셔티브 / 목표</button>
+      <button class="nav-item" onclick="showPage('premises',this)"><span class="nav-icon">🎯</span> 이니셔티브 / 목표</button>
+      <div class="sidebar-section">AI</div>
+      <button class="nav-item" onclick="showPage('audit',this)"><span class="nav-icon">🔍</span> AI 감사</button>
+      <div class="sidebar-section">커뮤니케이션</div>
+      <button class="nav-item" onclick="showPage('mail',this)"><span class="nav-icon">📧</span> 메일 미리보기</button>
       <div class="sidebar-user">
         <div class="user-avatar" id="sidebar-avatar">😊</div>
         <div class="user-info">
@@ -461,7 +520,7 @@
     <!-- Main -->
     <div class="main-content">
       <div class="page-header">
-        <div class="page-title" id="page-title">오늘의 할일</div>
+        <div class="page-title" id="page-title">오늘 스크럼</div>
         <div class="page-date" id="page-date"></div>
       </div>
       <div class="content-area" id="content-area"></div>
@@ -472,19 +531,16 @@
   <nav class="bottom-nav">
     <div class="bottom-nav-inner">
       <button class="bottom-nav-item active" id="bnav-home" onclick="showPage('home',this,'bnav-home')">
-        <span class="bnav-icon">🏠</span><span>할일</span>
+        <span class="bnav-icon">🏠</span><span>스크럼</span>
       </button>
       <button class="bottom-nav-item" id="bnav-team" onclick="showPage('team',this,'bnav-team')">
         <span class="bnav-icon">👥</span><span>팀</span>
       </button>
-      <button class="bottom-nav-item" id="bnav-heatmap" onclick="showPage('heatmap',this,'bnav-heatmap')">
-        <span class="bnav-icon">🔥</span><span>히트맵</span>
-      </button>
       <button class="bottom-nav-item" id="bnav-premises" onclick="showPage('premises',this,'bnav-premises')">
         <span class="bnav-icon">🎯</span><span>목표</span>
       </button>
-      <button class="bottom-nav-item" id="bnav-insight" onclick="showPage('insight',this,'bnav-insight')">
-        <span class="bnav-icon">📊</span><span>인사이트</span>
+      <button class="bottom-nav-item" id="bnav-audit" onclick="showPage('audit',this,'bnav-audit')">
+        <span class="bnav-icon">🔍</span><span>AI 감사</span>
       </button>
     </div>
   </nav>
@@ -500,6 +556,9 @@ let currentUser = null;
 let todos = [];
 let premises = [];
 let teamMembers = [];
+let auditDecisions = null;
+let mailPreviewUser = null;
+window._hitlSettings = { auto_approve_enabled:false, auto_approve_threshold:0.95, notify_on_flag:true, review_required_types:'todo_match,anomaly' };
 const IS_LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
 
 // ── 전체 데모 데이터셋 ───────────────────────────────────────────────────
@@ -635,6 +694,17 @@ const DEMO_TODOS = {
   ],
 };
 
+const DEMO_AI_DECISIONS = [
+  { id:1, decision_type:'todo_match', input_summary:'Slack 일일 리포트 봇 메시지 템플릿 작성', ai_output:'목표: 매일 답장 자동화하기 (신뢰도 94%)', reasoning:"'Slack', '봇', '메시지 템플릿' 키워드가 '매일 답장 자동화하기' 목표와 94% 유사도 매칭.", confidence:0.94, status:'approved' },
+  { id:2, decision_type:'todo_match', input_summary:'DML 배치 스크립트 작성 (고객 등급 업데이트)', ai_output:'목표: DML 처리 자동화하기 (신뢰도 97%)', reasoning:"'DML', '배치', '스크립트' 키워드 조합으로 97% 매칭. 최고 신뢰도.", confidence:0.97, status:'approved' },
+  { id:3, decision_type:'todo_match', input_summary:'매일 오전 스탠드업 참석', ai_output:'목표 연결 없음 (신뢰도 12%)', reasoning:"반복 일정성 활동. '스탠드업' 키워드가 어떤 목표와도 직접 매칭되지 않음.", confidence:0.12, status:'flagged' },
+  { id:4, decision_type:'todo_match', input_summary:'신규 팀원 온보딩 체크리스트 자동화', ai_output:'이니셔티브: 팀 커뮤니케이션 효율화하기 (신뢰도 80%)', reasoning:"'온보딩', '체크리스트' 키워드로 커뮤니케이션 이니셔티브에 매칭. 특정 목표 없음.", confidence:0.80, status:'pending' },
+  { id:5, decision_type:'priority_score', input_summary:'결제 오류 알림 Slack 채널 설정', ai_output:'우선순위: HIGH (긴급도 0.88)', reasoning:"'결제', '오류', '알림' 키워드 조합으로 비즈니스 임팩트 HIGH 판정.", confidence:0.88, status:'pending' },
+  { id:6, decision_type:'todo_match', input_summary:'인터뷰 결과 인사이트 문서 작성', ai_output:'목표: 결제 UX 인터뷰 5건 완료하기 (신뢰도 91%)', reasoning:"'인터뷰', '인사이트', '문서' 키워드로 UX 인터뷰 목표 연결. 단, 직접 인터뷰 아님.", confidence:0.91, status:'pending' },
+  { id:7, decision_type:'team_assign', input_summary:'GitHub Actions 스테이징 배포 파이프라인 완성', ai_output:'담당팀: 결제 플랫폼 팀 (신뢰도 96%)', reasoning:"'GitHub Actions', 'CI/CD', '배포' 키워드로 개발팀 분류.", confidence:0.96, status:'approved' },
+  { id:8, decision_type:'anomaly', input_summary:'Docker 멀티스테이지 빌드로 이미지 최적화', ai_output:'⚠️ 목표 연결 불확실 (유사 목표 2개 감지)', reasoning:"'Docker'가 '배포 파이프라인'(83%)과 '반복업무 자동화'(78%) 양쪽에 걸침. 중복 가능성 있음.", confidence:0.83, status:'pending' },
+];
+
 // teamMembers 계산 헬퍼
 function buildTeamMembers(teamId) {
   return DEMO_USERS.filter(u => u.team_id === teamId).map(u => {
@@ -726,21 +796,32 @@ function closeDrawer() {
 }
 
 // ── Navigation ─────────────────────────────────────────────────────────────
-const pageTitles = { home:'오늘의 할일', history:'히스토리', insight:'주간 인사이트', team:'팀 대시보드', heatmap:'기여 히트맵', premises:'이니셔티브 / 목표' };
+const pageTitles = {
+  home: '오늘 스크럼',
+  team: '팀 현황',
+  premises: '이니셔티브 / 목표',
+  audit: 'AI 감사',
+  mail: '메일 미리보기',
+};
 
 function showPage(page, navEl, bnavId) {
   closeDrawer();
-  // 사이드바 active
   document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
   if (navEl && navEl.closest('.sidebar')) navEl.classList.add('active');
   else {
-    const sidebarItems = [...document.querySelectorAll('.sidebar .nav-item')];
-    const match = sidebarItems.find(n => n.textContent.trim().includes(pageTitles[page]?.split(' ')[0] || ''));
+    const pageLabelMap = {
+      home: '오늘 스크럼',
+      team: '팀 현황',
+      premises: '이니셔티브 / 목표',
+      audit: 'AI 감사',
+      mail: '메일 미리보기',
+    };
+    const match = [...document.querySelectorAll('.sidebar .nav-item')]
+      .find(n => n.textContent.trim().includes(pageLabelMap[page] || pageTitles[page] || ''));
     if (match) match.classList.add('active');
   }
-  // 하단 네비 active
   document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
-  const bnavMap = { home:'bnav-home', team:'bnav-team', heatmap:'bnav-heatmap', premises:'bnav-premises', insight:'bnav-insight', history:'bnav-home' };
+  const bnavMap = { home:'bnav-home', team:'bnav-team', premises:'bnav-premises', audit:'bnav-audit', mail:'bnav-audit' };
   const bnavEl = document.getElementById(bnavId || bnavMap[page]);
   if (bnavEl) bnavEl.classList.add('active');
 
@@ -748,7 +829,7 @@ function showPage(page, navEl, bnavId) {
   if (document.getElementById('page-title')) document.getElementById('page-title').textContent = title;
   if (document.getElementById('mobile-page-title')) document.getElementById('mobile-page-title').textContent = title;
 
-  const pages = { home: renderHome, history: renderHistory, insight: renderInsight, team: renderTeam, heatmap: renderHeatmap, premises: renderPremises };
+  const pages = { home: renderHome, team: renderTeam, premises: renderPremises, audit: renderAudit, mail: renderMail };
   const fn = pages[page];
   if (fn) fn();
 }
@@ -813,6 +894,8 @@ function renderHome() {
   const todayTodos = todos.filter(t => t.status !== 'done');
   const doneTodos = todos.filter(t => t.status === 'done');
   const focusTodo = todos.find(t => t.analysis?.relation === 'initiative' && t.status !== 'done') || todos.find(t => t.status !== 'done');
+  const doneCount = doneTodos.length;
+  const todoCount = todayTodos.length;
 
   document.getElementById('content-area').innerHTML = `
     ${focusTodo ? `
@@ -822,11 +905,35 @@ function renderHome() {
       <div class="focus-reason">${focusTodo.analysis?.relation==='initiative'?'이니셔티브 기여도가 높은 작업입니다':'지금 가장 중요한 작업이에요'}</div>
     </div>` : ''}
 
+    <div class="async-scrum-banner">
+      <div class="scrum-row">
+        <span class="scrum-icon">✅</span>
+        <div>
+          <div class="scrum-label">어제 완료한 일</div>
+          <div class="scrum-value" id="scrum-yesterday">${doneCount}건 완료</div>
+        </div>
+      </div>
+      <div class="scrum-row">
+        <span class="scrum-icon">🎯</span>
+        <div>
+          <div class="scrum-label">오늘 집중할 일</div>
+          <div class="scrum-value">${todoCount}건 예정</div>
+        </div>
+      </div>
+      <div class="scrum-row">
+        <span class="scrum-icon">⚠️</span>
+        <div>
+          <div class="scrum-label">블로커</div>
+          <div class="scrum-value" style="color:var(--text-03)">없음</div>
+        </div>
+      </div>
+    </div>
+
     <div class="grid-2">
       <div>
         <div class="card">
           <div class="card-header">
-            <div class="card-title">📝 오늘의 할일 <span style="font-size:12px;color:var(--text-03);font-weight:400">${todayTodos.length}개 남음</span></div>
+            <div class="card-title">📝 오늘 스크럼 <span style="font-size:12px;color:var(--text-03);font-weight:400">${todayTodos.length}개 남음</span></div>
             <button onclick="triggerAnalysis()" style="background:var(--purple-bg);color:var(--purple);border:none;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;min-height:32px">⚡ AI 분석</button>
           </div>
           <div class="card-body">
@@ -890,6 +997,14 @@ function renderHome() {
 
 function todoHTML(t) {
   const rel = t.analysis?.relation;
+  const c = t.analysis?.confidence;
+  const confidenceBadge = typeof c === 'number'
+    ? c >= 0.9
+      ? `<span class="ai-badge ai-high">AI ✓ ${Math.round(c*100)}%</span>`
+      : c >= 0.7
+        ? `<span class="ai-badge ai-mid">AI ~ ${Math.round(c*100)}%</span>`
+        : `<span class="ai-badge ai-low">AI ? ${Math.round(c*100)}%</span>`
+    : '';
   return `
     <div class="todo-item ${t.status==='done'?'done':''}" id="ti-${t.id}">
       <div class="todo-check ${t.status==='done'?'checked':''}" onclick="toggleTodo(${t.id})"></div>
@@ -897,6 +1012,7 @@ function todoHTML(t) {
         <div class="todo-title">${esc(t.title)}</div>
         <div class="todo-meta">
           ${rel ? relationTag(rel) : `<span class="tag tag-pending">분석 대기</span>`}
+          ${confidenceBadge}
         </div>
       </div>
       <div class="todo-actions">
@@ -1344,6 +1460,177 @@ function renderPremises() {
     </div>`;
 }
 
+function renderAudit() {
+  if (!auditDecisions) auditDecisions = DEMO_AI_DECISIONS.map(d => ({...d}));
+
+  const stats = { pending:0, approved:0, flagged:0, overridden:0 };
+  auditDecisions.forEach(d => { stats[d.status] = (stats[d.status]||0)+1; });
+
+  const typeLabel = { todo_match:'할일 매칭', priority_score:'우선순위 판정', team_assign:'팀 배정', anomaly:'⚠️ 이상 감지' };
+  const confColor = c => c>=0.9?'#1A9F46':c>=0.7?'#FF6114':'#FF4242';
+  const statusLabel = { pending:'검토 필요', approved:'승인됨', flagged:'이의제기', overridden:'수정됨' };
+
+  document.getElementById('content-area').innerHTML = `
+    <div class="audit-stats">
+      <div class="audit-stat-card"><div class="audit-stat-num">${auditDecisions.length}</div><div class="audit-stat-lbl">전체</div></div>
+      <div class="audit-stat-card"><div class="audit-stat-num" style="color:var(--primary)">${stats.pending||0}</div><div class="audit-stat-lbl">검토 필요</div></div>
+      <div class="audit-stat-card"><div class="audit-stat-num" style="color:#1A9F46">${stats.approved||0}</div><div class="audit-stat-lbl">승인됨</div></div>
+      <div class="audit-stat-card"><div class="audit-stat-num" style="color:var(--high)">${stats.flagged||0}</div><div class="audit-stat-lbl">이의제기</div></div>
+    </div>
+    ${auditDecisions.map(d => `
+      <div class="audit-card ${d.status}" id="acard-${d.id}">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">
+          <span class="audit-type-badge atype-${d.decision_type}">${typeLabel[d.decision_type]||d.decision_type}</span>
+          <span class="audit-status-chip asc-${d.status}">${statusLabel[d.status]||d.status}</span>
+        </div>
+        <div class="audit-input">${esc(d.input_summary)}</div>
+        <div class="audit-output">→ ${esc(d.override_output || d.ai_output)}</div>
+        <div class="audit-conf-bar"><div class="audit-conf-fill" style="width:${Math.round(d.confidence*100)}%;background:${confColor(d.confidence)}"></div></div>
+        <div style="font-size:11px;color:var(--text-03);margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          <span style="font-weight:600;color:${confColor(d.confidence)}">${Math.round(d.confidence*100)}% 신뢰도</span>
+          <button onclick="toggleReasoning(${d.id})" style="background:none;border:none;font-size:11px;color:var(--text-03);cursor:pointer;padding:0;font-family:inherit">근거 보기 ▾</button>
+        </div>
+        <div class="audit-reasoning" id="areason-${d.id}">${esc(d.reasoning)}</div>
+        <div class="audit-actions">
+          <button class="btn-audit approve" onclick="auditAction(${d.id},'approved')">✅ 승인</button>
+          <button class="btn-audit flag" onclick="auditAction(${d.id},'flagged')">⚠️ 이의제기</button>
+          <button class="btn-audit override" onclick="toggleOverrideForm(${d.id})">✏️ 수정</button>
+        </div>
+        <div class="override-form" id="aoverride-${d.id}">
+          <textarea class="override-input" id="aoverride-text-${d.id}" placeholder="올바른 판단을 입력하세요..."></textarea>
+          <div style="display:flex;gap:6px">
+            <button class="btn-confirm btn-sm" onclick="submitOverride(${d.id})">수정 저장</button>
+            <button class="btn-cancel btn-sm" onclick="toggleOverrideForm(${d.id})">취소</button>
+          </div>
+        </div>
+      </div>
+    `).join('')}
+  `;
+  debugPanelRender();
+}
+
+function toggleReasoning(id) {
+  document.getElementById('areason-'+id)?.classList.toggle('show');
+}
+function toggleOverrideForm(id) {
+  document.getElementById('aoverride-'+id)?.classList.toggle('show');
+}
+function auditAction(id, status) {
+  if (!auditDecisions) return;
+  const d = auditDecisions.find(x => x.id === id);
+  if (d) {
+    d.status = status;
+    renderAudit();
+    showToast(status==='approved'?'✅ AI 판단을 승인했어요':'⚠️ 이의제기가 접수됐어요');
+  }
+}
+function submitOverride(id) {
+  const text = document.getElementById('aoverride-text-'+id)?.value.trim();
+  if (!text) { showToast('수정 내용을 입력해주세요'); return; }
+  if (!auditDecisions) return;
+  const d = auditDecisions.find(x => x.id === id);
+  if (d) {
+    d.status = 'overridden';
+    d.override_output = text;
+    renderAudit();
+    showToast('✏️ AI 판단이 수정됐어요');
+  }
+}
+
+function renderMail() {
+  if (!mailPreviewUser) mailPreviewUser = currentUser?.id || 1;
+
+  const user = DEMO_USERS.find(u => u.id === mailPreviewUser) || DEMO_USERS[0];
+  const userTodos = DEMO_TODOS[user.id] || [];
+  const done = userTodos.filter(t => t.status==='done');
+  const todo = userTodos.filter(t => t.status==='todo');
+  const aiTasks = userTodos.filter(t => t.analysis && t.analysis.confidence >= 0.8);
+  const team = DEMO_TEAMS.find(t => t.id === user.team_id);
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'});
+
+  document.getElementById('content-area').innerHTML = `
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:0 0 200px">
+        <div class="card" style="padding:14px 0">
+          <div style="padding:0 14px 10px;font-size:12px;font-weight:700;color:var(--text-03);text-transform:uppercase;letter-spacing:.5px">팀원 선택</div>
+          ${DEMO_USERS.map(u => {
+            const t = DEMO_TEAMS.find(x => x.id === u.team_id);
+            return `<button onclick="setMailUser(${u.id})" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 14px;border:none;background:${u.id===mailPreviewUser?'var(--primary-bg)':'transparent'};cursor:pointer;font-family:inherit;text-align:left;border-left:3px solid ${u.id===mailPreviewUser?'var(--primary)':'transparent'}">
+              <span style="font-size:18px">${u.emoji}</span>
+              <div>
+                <div style="font-size:12px;font-weight:${u.id===mailPreviewUser?700:500};color:${u.id===mailPreviewUser?'var(--primary)':'var(--text-01)'}">${u.name}</div>
+                <div style="font-size:10px;color:var(--text-03)">${t?.name||''}</div>
+              </div>
+            </button>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:320px">
+        <div class="card">
+          <div style="padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg-02);border-radius:var(--radius) var(--radius) 0 0">
+            <div style="font-size:11px;color:var(--text-03);margin-bottom:3px">From: TeamFlow AI &lt;noreply@teamflow.ai&gt;</div>
+            <div style="font-size:11px;color:var(--text-03);margin-bottom:3px">To: ${user.name} &lt;${user.username}@company.com&gt;</div>
+            <div style="font-size:11px;color:var(--text-03);margin-bottom:3px">Date: ${dateStr}</div>
+            <div style="font-size:14px;font-weight:700;margin-top:6px;letter-spacing:-0.02em">[TeamFlow] ${user.name}님의 오늘 업무 AI 분석 리포트</div>
+          </div>
+          <div style="padding:24px;max-width:600px">
+            <div style="background:linear-gradient(135deg,#151515,#F85100);color:white;border-radius:12px;padding:20px 24px;margin-bottom:20px">
+              <div style="font-size:11px;opacity:.7;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">TeamFlow Daily Report</div>
+              <div style="font-size:20px;font-weight:700;letter-spacing:-0.03em">${user.emoji} ${user.name}님, 오늘도 수고하셨어요!</div>
+              <div style="font-size:13px;opacity:.85;margin-top:6px">${dateStr} · ${team?.name||''}</div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
+              <div style="text-align:center;padding:14px;border:1px solid var(--border);border-radius:12px">
+                <div style="font-size:24px;font-weight:700;color:var(--primary)">${userTodos.length}</div>
+                <div style="font-size:11px;color:var(--text-03)">전체 할일</div>
+              </div>
+              <div style="text-align:center;padding:14px;border:1px solid var(--border);border-radius:12px">
+                <div style="font-size:24px;font-weight:700;color:#1A9F46">${done.length}</div>
+                <div style="font-size:11px;color:var(--text-03)">완료</div>
+              </div>
+              <div style="text-align:center;padding:14px;border:1px solid var(--border);border-radius:12px">
+                <div style="font-size:24px;font-weight:700;color:var(--medium)">${todo.length}</div>
+                <div style="font-size:11px;color:var(--text-03)">진행 중</div>
+              </div>
+            </div>
+
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text-01)">📋 오늘의 업무 목록</div>
+            ${userTodos.map(t => `
+              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:${t.status==='done'?'#F9FFF9':'white'}">
+                <span style="font-size:16px">${t.status==='done'?'✅':'⏳'}</span>
+                <span style="flex:1;font-size:13px;${t.status==='done'?'text-decoration:line-through;color:var(--text-03)':''}">${esc(t.title)}</span>
+                ${t.analysis?.confidence ? `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${t.analysis.confidence>=0.9?'#E8F9F0':t.analysis.confidence>=0.7?'var(--primary-bg)':'var(--bg-03)'};color:${t.analysis.confidence>=0.9?'#1A9F46':t.analysis.confidence>=0.7?'var(--primary)':'var(--text-03)'}">AI ${Math.round(t.analysis.confidence*100)}%</span>` : ''}
+              </div>
+            `).join('')}
+
+            ${aiTasks.length ? `
+            <div style="margin-top:18px;background:var(--primary-bg);border:1px solid var(--primary-border);border-radius:12px;padding:14px 16px">
+              <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px">✨ AI가 분석한 목표 기여도</div>
+              ${aiTasks.map(t => `<div style="font-size:12px;color:var(--text-02);margin-bottom:4px">• ${esc(t.title)} → <strong>${t.analysis.relation === 'initiative' ? '이니셔티브' : '목표'}</strong> 기여 (${Math.round(t.analysis.confidence*100)}%)</div>`).join('')}
+            </div>` : ''}
+
+            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--text-03);text-align:center">
+              TeamFlow · AI 팀 생산성 플랫폼 · 수신 거부는 설정에서
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn-cancel btn-sm" onclick="showToast('📤 테스트 발송 기능은 준비 중이에요')">테스트 발송</button>
+          <button class="btn-confirm btn-sm" onclick="showToast('✅ 메일이 발송됐어요!')">발송</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function setMailUser(userId) {
+  mailPreviewUser = userId;
+  renderMail();
+}
+
 function mapGoalToInitiative(goalId, initiativeId) {
   const p = premises.find(x => x.id === goalId);
   if (!p) return;
@@ -1488,6 +1775,11 @@ function debugPanelInit() {
     <div id="debug-panel-body">
       <div class="dp-teams" id="dp-teams"></div>
       <div class="dp-members" id="dp-members"></div>
+      <div id="dp-admin-section" style="display:none">
+        <div style="height:1px;background:rgba(248,81,0,0.2);margin:10px 0"></div>
+        <div style="font-size:10px;font-weight:700;color:#f85100;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">⚙️ HITL 어드민 설정</div>
+        <div id="dp-admin-body"></div>
+      </div>
     </div>
   `;
   document.body.appendChild(panel);
@@ -1523,6 +1815,45 @@ function debugPanelRender() {
       ${u.id === currentUser?.id ? '<span class="dp-cur">● 현재</span>' : ''}
     </button>
   `).join('');
+
+  const adminSection = document.getElementById('dp-admin-section');
+  const adminBody = document.getElementById('dp-admin-body');
+  if (adminSection && adminBody && currentUser?.role === 'leader') {
+    adminSection.style.display = 'block';
+    const hitl = window._hitlSettings || {
+      auto_approve_enabled: false,
+      auto_approve_threshold: 0.95,
+      notify_on_flag: true,
+      review_required_types: 'todo_match,anomaly'
+    };
+    adminBody.innerHTML = `
+      <div style="margin-bottom:8px">
+        <label style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#ccc;cursor:pointer">
+          <span>자동 승인</span>
+          <input type="checkbox" ${hitl.auto_approve_enabled?'checked':''} onchange="hitlSetAutoApprove(this.checked)" style="accent-color:#f85100">
+        </label>
+      </div>
+      <div style="margin-bottom:8px">
+        <div style="font-size:10px;color:#888;margin-bottom:3px">신뢰도 임계치: <span id="dp-threshold-val">${Math.round(hitl.auto_approve_threshold*100)}%</span></div>
+        <input type="range" min="70" max="99" value="${Math.round(hitl.auto_approve_threshold*100)}"
+          oninput="document.getElementById('dp-threshold-val').textContent=this.value+'%';window._hitlSettings={...window._hitlSettings,auto_approve_threshold:this.value/100}"
+          style="width:100%;accent-color:#f85100">
+      </div>
+      <div style="margin-bottom:8px">
+        <label style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#ccc;cursor:pointer">
+          <span>이의제기 알림</span>
+          <input type="checkbox" ${hitl.notify_on_flag?'checked':''} onchange="hitlSetNotify(this.checked)" style="accent-color:#f85100">
+        </label>
+      </div>
+      <div style="font-size:10px;color:#888;margin-top:6px">검토 대상: <span style="color:#f85100">${hitl.review_required_types}</span></div>
+      <div id="dp-ai-queue" style="margin-top:8px;padding:6px 8px;background:rgba(248,81,0,0.1);border-radius:6px;font-size:11px;color:#ccc">
+        📋 AI 결정 검토 대기: <span style="color:#f85100;font-weight:700">${(auditDecisions||DEMO_AI_DECISIONS).filter(d=>d.status==='pending').length}건</span>
+        <button onclick="showPage('audit')" style="background:none;border:none;color:#f85100;font-size:11px;cursor:pointer;margin-left:4px">바로가기 →</button>
+      </div>
+    `;
+  } else if (adminSection) {
+    adminSection.style.display = 'none';
+  }
 }
 
 function debugSelectTeam(teamId) {
@@ -1531,6 +1862,9 @@ function debugSelectTeam(teamId) {
   if (firstMember) switchDemoUser(firstMember.id);
   else debugPanelRender();
 }
+
+function hitlSetAutoApprove(v) { window._hitlSettings.auto_approve_enabled = v; showToast(v?'🤖 AI 자동 승인 ON':'🔍 수동 검토 모드 ON'); }
+function hitlSetNotify(v) { window._hitlSettings.notify_on_flag = v; showToast(v?'🔔 이의제기 알림 ON':'🔕 알림 OFF'); }
 
 // ── Logout ─────────────────────────────────────────────────────────────────
 function logout() {

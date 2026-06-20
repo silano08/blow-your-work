@@ -100,6 +100,48 @@ async def init_db() -> None:
             )
         """)
 
+        # ── AI Decisions (Human-in-the-Loop 감사 테이블) ─────────────────
+        # decision_type: todo_match | priority_score | team_assign | anomaly
+        # status: pending | approved | flagged | overridden
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS ai_decisions (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                decision_type   TEXT NOT NULL,
+                input_summary   TEXT NOT NULL,
+                ai_output       TEXT NOT NULL,
+                reasoning       TEXT,
+                confidence      REAL DEFAULT 0.0,
+                ref_todo_id     INTEGER REFERENCES daily_todos(id) ON DELETE SET NULL,
+                ref_premise_id  INTEGER REFERENCES premises(id) ON DELETE SET NULL,
+                status          TEXT DEFAULT 'pending'
+                                    CHECK(status IN ('pending','approved','flagged','overridden')),
+                review_by       TEXT,
+                override_reason TEXT,
+                override_output TEXT,
+                created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+                reviewed_at     DATETIME
+            )
+        """)
+
+        # ── HITL Settings (어드민 설정 KV 스토어) ────────────────────────
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS hitl_settings (
+                key        TEXT PRIMARY KEY,
+                value      TEXT NOT NULL,
+                updated_by TEXT,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # 기본값 삽입 (멱등)
+        await db.execute("""
+            INSERT OR IGNORE INTO hitl_settings (key, value) VALUES
+                ('auto_approve_enabled', '0'),
+                ('auto_approve_threshold', '0.95'),
+                ('notify_on_flag', '1'),
+                ('notify_recipients', 'leader'),
+                ('review_required_types', 'todo_match,anomaly')
+        """)
+
         await db.commit()
         await _seed(db)
 
@@ -198,6 +240,56 @@ async def _seed(db: aiosqlite.Connection) -> None:
             (12, 9, "small", 0.91, "인터뷰 결과 정리는 UX 인터뷰 소전제 기여"),
             (13, 4, "grand", 0.87, "UX 프로토타입은 '사용자 경험 개선하기' 대전제 기여"),
         ],
+    )
+
+    # ── AI Decisions seed ──────────────────────────────────────────────────
+    await db.executemany(
+        """INSERT OR IGNORE INTO ai_decisions
+           (id, decision_type, input_summary, ai_output, reasoning, confidence,
+            ref_todo_id, ref_premise_id, status)
+           VALUES (?,?,?,?,?,?,?,?,?)""",
+        [
+            (1, 'todo_match',
+             'Slack 일일 리포트 봇 메시지 템플릿 작성',
+             '목표: 매일 답장 자동화하기 (신뢰도 94%)',
+             "'Slack', '봇', '메시지 템플릿' 키워드가 '매일 답장 자동화하기' 목표와 94% 유사도. 이니셔티브 '팀 커뮤니케이션 효율화하기' 연결.",
+             0.94, 1, 6, 'approved'),
+            (2, 'todo_match',
+             'DML 배치 스크립트 작성 (고객 등급 업데이트)',
+             '목표: DML 처리 자동화하기 (신뢰도 97%)',
+             "'DML', '배치', '스크립트', 'DB 작업' 키워드 조합으로 'DML 처리 자동화하기' 목표와 97% 매칭.",
+             0.97, 5, 5, 'approved'),
+            (3, 'todo_match',
+             '매일 오전 스탠드업 참석',
+             '목표 연결 없음 (신뢰도 12%)',
+             "반복 일정성 활동으로 판단. '스탠드업', '참석' 키워드가 어떤 목표와도 직접 매칭되지 않음. 생산성 기여 낮음으로 분류.",
+             0.12, 10, None, 'flagged'),
+            (4, 'todo_match',
+             '신규 팀원 온보딩 체크리스트 자동화',
+             '이니셔티브: 팀 커뮤니케이션 효율화하기 (신뢰도 80%)',
+             "'온보딩', '체크리스트', 'Notion 템플릿' 키워드로 커뮤니케이션 효율화 이니셔티브에 매칭. 단, 특정 목표 없음.",
+             0.80, 4, 2, 'pending'),
+            (5, 'priority_score',
+             '결제 오류 알림 Slack 채널 설정',
+             '우선순위: HIGH (긴급도 0.88)',
+             "'결제', '오류', '알림' 키워드 조합으로 비즈니스 임팩트 HIGH 판정. 실시간 고객 영향 가능성 감지.",
+             0.88, 3, 8, 'pending'),
+            (6, 'todo_match',
+             '인터뷰 결과 인사이트 문서 작성',
+             '목표: 결제 UX 인터뷰 5건 완료하기 (신뢰도 91%)',
+             "'인터뷰', '인사이트', '문서' 키워드로 UX 인터뷰 목표에 연결. 단, 직접 인터뷰가 아닌 문서화 작업임.",
+             0.91, 12, 9, 'pending'),
+            (7, 'team_assign',
+             'GitHub Actions 스테이징 배포 파이프라인 완성',
+             '담당팀: 결제 플랫폼 팀 (신뢰도 96%)',
+             "'GitHub Actions', 'CI/CD', '배포' 키워드로 개발팀 작업으로 분류. 반복업무 자동화 이니셔티브의 핵심.",
+             0.96, 8, 7, 'approved'),
+            (8, 'anomaly',
+             'Docker 멀티스테이지 빌드로 이미지 최적화',
+             '⚠️ 목표 연결 불확실 (신뢰도 83% / 유사 목표 2개 감지)',
+             "'Docker', '이미지 최적화'가 '배포 파이프라인 구축하기'와 83% 매칭. 단, '반복업무 자동화'와도 78% 유사. 중복 가능성 있음.",
+             0.83, 9, 7, 'pending'),
+        ]
     )
 
     await db.commit()

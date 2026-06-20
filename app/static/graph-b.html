@@ -8,24 +8,31 @@
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#F6F6F9;font-family:'Pretendard',-apple-system,sans-serif;overflow:hidden;height:100vh;color:#151515;letter-spacing:-0.02em}
-#header{position:fixed;top:0;left:0;right:0;z-index:10;height:52px;background:#fff;border-bottom:1px solid #E5E5E8;display:flex;align-items:center;padding:0 20px;gap:12px;flex-wrap:nowrap}
+body{font-family:'Pretendard',-apple-system,sans-serif;overflow:hidden;height:100vh;color:#151515;letter-spacing:-0.02em}
+/* ── 헤더 ── */
+#header{position:fixed;top:0;left:0;right:0;z-index:30;height:52px;background:#fff;border-bottom:1px solid #E5E5E8;display:flex;align-items:center;padding:0 20px;gap:12px}
 #header h1{font-size:13px;font-weight:700;color:#F85100;letter-spacing:-0.03em;white-space:nowrap}
+.sep{width:1px;height:20px;background:#E5E5E8;flex-shrink:0}
 .leg{display:flex;align-items:center;gap:5px;font-size:11px;color:#888;white-space:nowrap}
 .ld{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.sep{width:1px;height:20px;background:#E5E5E8;flex-shrink:0}
-.filters{margin-left:auto;display:flex;gap:5px}
+/* 팀 필터 (force 뷰 전용) */
+#team-filters{display:flex;gap:5px;margin-left:4px}
 .fb{padding:0 11px;height:28px;border-radius:9999px;border:1.5px solid #E5E5E8;background:#fff;font-size:11px;font-weight:600;cursor:pointer;color:#888;font-family:inherit;letter-spacing:-0.02em;transition:all .15s}
 .fb.on{border-color:#F85100;color:#F85100;background:#FFEFE7}
-/* 우측 패널 */
+/* 뷰 전환 토글 */
+#view-toggle{margin-left:auto;display:flex;background:#F6F6F9;border:1.5px solid #E5E5E8;border-radius:9999px;padding:3px;gap:2px}
+.vt-btn{padding:0 14px;height:24px;border-radius:9999px;border:none;background:transparent;font-size:11px;font-weight:600;cursor:pointer;color:#888;font-family:inherit;letter-spacing:-0.02em;transition:all .15s;white-space:nowrap}
+.vt-btn.on{background:#fff;color:#F85100;box-shadow:0 1px 4px rgba(0,0,0,0.1)}
+
+/* ── 공통 패널 ── */
 #panel{position:fixed;top:52px;right:0;bottom:0;width:272px;background:#fff;border-left:1px solid #E5E5E8;transform:translateX(100%);transition:transform .25s ease;z-index:20;display:flex;flex-direction:column}
 #panel.open{transform:translateX(0)}
 #panel-head{padding:16px 16px 0;display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0}
 #panel-title{font-size:15px;font-weight:700;letter-spacing:-0.03em;line-height:1.3}
-#panel-close{background:none;border:none;font-size:20px;cursor:pointer;color:#888;line-height:1;padding:0;flex-shrink:0}
+#panel-close{background:none;border:none;font-size:20px;cursor:pointer;color:#888;padding:0;flex-shrink:0}
 #panel-body{padding:12px 16px;overflow-y:auto;flex:1}
-.p-type{font-size:11px;color:#888;margin-bottom:12px}
-.p-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:9999px;font-size:11px;font-weight:600;margin-bottom:12px}
+.p-type{font-size:11px;color:#888;margin-bottom:10px}
+.p-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:9999px;font-size:11px;font-weight:600;margin-bottom:10px}
 .p-prog-wrap{margin-bottom:14px}
 .p-prog-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px}
 .p-prog-bar{height:4px;background:#E5E5E8;border-radius:9999px;overflow:hidden}
@@ -34,26 +41,76 @@ body{background:#F6F6F9;font-family:'Pretendard',-apple-system,sans-serif;overfl
 .p-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F6F6F9;border-radius:8px;margin-bottom:4px;cursor:pointer;font-size:12px;border:1.5px solid transparent;transition:border-color .15s}
 .p-item:hover{border-color:#F85100}
 .p-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.p-status-done{color:#1A9F46;font-size:11px;font-weight:600;margin-left:auto;flex-shrink:0}
-.p-status-doing{color:#FF6114;font-size:11px;font-weight:600;margin-left:auto;flex-shrink:0}
-/* 툴팁 */
+.p-stat-done{color:#1A9F46;font-size:11px;font-weight:600;margin-left:auto;flex-shrink:0}
+.p-stat-doing{color:#FF6114;font-size:11px;font-weight:600;margin-left:auto;flex-shrink:0}
+
+/* ── 툴팁 ── */
 #tt{position:fixed;pointer-events:none;z-index:999;background:#151515;color:#fff;border-radius:8px;padding:8px 12px;font-size:12px;max-width:200px;display:none;letter-spacing:-0.02em}
 #tt-t{font-weight:700;margin-bottom:2px}
 #tt-m{color:rgba(255,255,255,.65);font-size:10px}
-/* SVG */
-svg{display:block;margin-top:52px}
+
+/* ── 뷰 컨테이너 ── */
+.view-wrap{position:fixed;top:52px;left:0;bottom:0;right:0;display:none}
+.view-wrap.active{display:block}
+
+/* ── Force 그래프 ── */
+#view-force{background:#F6F6F9}
+#view-force svg{display:block}
 .link{fill:none;stroke:#E5E5E8;stroke-width:1.5}
 .link.cross{stroke:#FFCFBD;stroke-width:2;stroke-dasharray:4,3}
 .link.hl{stroke:#F85100;stroke-width:2.5;opacity:1!important}
 .link.dim{opacity:0.06}
-.node circle{cursor:pointer;transition:filter .15s}
+.node circle{cursor:pointer}
 .node text{pointer-events:none;font-family:'Pretendard',-apple-system,sans-serif;letter-spacing:-0.02em}
 .node.dim circle{opacity:0.1}
 .node.dim text{opacity:0.08}
-.node.selected circle{filter:drop-shadow(0 0 6px rgba(248,81,0,0.6))}
+.node.selected circle{filter:drop-shadow(0 0 6px rgba(248,81,0,.6))}
+
+/* ── 방사형 ── */
+#view-radial{background:#fff;overflow:hidden}
+#view-radial svg{display:block}
+.r-edge{fill:none;stroke:#E5E5E8;stroke-width:1.5}
+.r-edge.cross{stroke:#FFCFBD;stroke-width:2;stroke-dasharray:4,3}
+.r-edge.hl{stroke:#F85100;stroke-width:2.5}
+
+/* ── 트리 ── */
+#view-tree{background:#F6F6F9;display:none}
+#view-tree.active{display:flex}
+#tree-scroll{flex:1;overflow:auto;padding:0 0 32px}
+#tree-side{width:280px;background:#fff;border-left:1px solid #E5E5E8;overflow-y:auto;flex-shrink:0}
+#tree-side-inner{padding:20px}
+#tree-empty{padding:40px 20px;text-align:center;color:#B0B0B3;font-size:13px}
+.t-sec{font-size:10px;font-weight:700;color:#B0B0B3;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 5px}
+.t-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#F6F6F9;border-radius:8px;margin-bottom:4px;cursor:pointer;font-size:12px}
+.t-item:hover{background:#FFEFE7}
+.t-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+/* ini / goal / todo 카드 */
+.ini-card{background:#151515;color:#fff;border-radius:12px;padding:12px 16px;cursor:pointer;min-width:190px;max-width:230px;flex-shrink:0;transition:transform .15s}
+.ini-card:hover{transform:translateY(-2px)}
+.ini-lbl{font-size:9px;font-weight:700;opacity:.5;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.ini-ttl{font-size:13px;font-weight:700;letter-spacing:-0.02em;margin-bottom:8px}
+.ini-bar{height:3px;background:rgba(255,255,255,.15);border-radius:9999px;overflow:hidden}
+.ini-bar-fill{height:100%;border-radius:9999px}
+.ini-pct{font-size:11px;margin-top:4px;opacity:.7}
+.goal-card{background:#fff;border:1.5px solid #E5E5E8;border-radius:10px;padding:10px 14px;cursor:pointer;min-width:160px;max-width:190px;flex-shrink:0;transition:border-color .15s}
+.goal-card:hover{border-color:#888}
+.goal-card.my-team{border-color:#FFCFBD}
+.goal-lbl{font-size:9px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.goal-ttl{font-size:12px;font-weight:600;letter-spacing:-0.02em;margin-bottom:6px}
+.goal-bar{height:3px;background:#E5E5E8;border-radius:9999px;overflow:hidden}
+.goal-bar-fill{height:100%;border-radius:9999px}
+.todo-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:9999px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid transparent;white-space:nowrap;transition:border-color .15s}
+.todo-chip:hover{border-color:currentColor}
+.tc-me-done{background:#FFEFE7;color:#F85100}
+.tc-me-doing{background:#fff;color:#F85100;border-color:#FFCFBD}
+.tc-team-done{background:#FFF4EE;color:#FFAF8A}
+.tc-team-doing{background:#fff;color:#FFAF8A;border-color:#FFCFBD}
+.tc-other-done{background:#F6F6F9;color:#888}
+.tc-other-doing{background:#fff;color:#B0B0B3;border-color:#E5E5E8}
 </style>
 </head>
 <body>
+
 <div id="header">
   <h1>💥 TeamFlow</h1>
   <div class="sep"></div>
@@ -62,12 +119,17 @@ svg{display:block;margin-top:52px}
   <div class="leg"><div class="ld" style="background:#B0B0B3"></div>타팀</div>
   <div class="leg"><div class="ld" style="background:#151515"></div>이니셔티브</div>
   <div class="leg"><div class="ld" style="background:#888"></div>목표</div>
-  <div class="filters">
-    <button class="fb on" onclick="setFilter('all',this)">전체</button>
-    <button class="fb" onclick="setFilter('dev',this)">개발</button>
-    <button class="fb" onclick="setFilter('plan',this)">기획</button>
-    <button class="fb" onclick="setFilter('sales',this)">영업</button>
-    <button class="fb" onclick="setFilter('acct',this)">회계</button>
+  <div id="team-filters">
+    <button class="fb on" onclick="setTeamFilter('all',this)">전체</button>
+    <button class="fb" onclick="setTeamFilter('dev',this)">개발</button>
+    <button class="fb" onclick="setTeamFilter('plan',this)">기획</button>
+    <button class="fb" onclick="setTeamFilter('sales',this)">영업</button>
+    <button class="fb" onclick="setTeamFilter('acct',this)">회계</button>
+  </div>
+  <div id="view-toggle">
+    <button class="vt-btn on" onclick="switchView('force',this)" title="연결 그래프">⬡ 그래프</button>
+    <button class="vt-btn" onclick="switchView('radial',this)" title="방사형 계층도">◎ 방사형</button>
+    <button class="vt-btn" onclick="switchView('tree',this)" title="트리 목록">☰ 트리</button>
   </div>
 </div>
 
@@ -80,283 +142,467 @@ svg{display:block;margin-top:52px}
 </div>
 
 <div id="tt"><div id="tt-t"></div><div id="tt-m"></div></div>
-<svg id="svg"></svg>
+
+<!-- View: Force 그래프 -->
+<div id="view-force" class="view-wrap active">
+  <svg id="force-svg"></svg>
+</div>
+
+<!-- View: 방사형 -->
+<div id="view-radial" class="view-wrap">
+  <svg id="radial-svg"></svg>
+</div>
+
+<!-- View: 트리 -->
+<div id="view-tree" class="view-wrap">
+  <div id="tree-scroll"></div>
+  <div id="tree-side"><div id="tree-side-inner"><div id="tree-empty">노드를 클릭하면<br>상세 정보가 표시됩니다</div></div></div>
+</div>
 
 <script>
-const ME_ID = 'kimdo'; // 내 식별자
+// ═══════════════════════════════════════
+//  공유 데이터
+// ═══════════════════════════════════════
 const ME_TEAM = 'dev';
 const TEAM_NAME = {dev:'개발팀',plan:'기획팀',sales:'영업팀',acct:'회계팀'};
 
 const NODES = [
-  // 이니셔티브 (5개) — pct: 완료율
-  {id:'i1',label:'반복업무 자동화',     type:'initiative',team:'dev', pct:72,size:19},
-  {id:'i2',label:'커뮤니케이션 효율화', type:'initiative',team:'dev', pct:55,size:17},
-  {id:'i3',label:'결제 안정성 강화',    type:'initiative',team:'acct',pct:80,size:18},
-  {id:'i4',label:'고객 UX 혁신',        type:'initiative',team:'plan',pct:40,size:16},
-  {id:'i5',label:'Q3 매출 달성',        type:'initiative',team:'sales',pct:62,size:18},
-
-  // 목표 (10개)
-  {id:'g1',label:'DML 자동화',        type:'goal',team:'dev', pct:75,size:11},
-  {id:'g2',label:'CI/CD 구축',        type:'goal',team:'dev', pct:67,size:11},
-  {id:'g3',label:'Slack 리포트',      type:'goal',team:'dev', pct:60,size:10},
-  {id:'g4',label:'온보딩 문서화',     type:'goal',team:'dev', pct:50,size:10},
-  {id:'g5',label:'결제 오류 감지',    type:'goal',team:'acct',pct:85,size:11},
-  {id:'g6',label:'정산 자동화',       type:'goal',team:'acct',pct:75,size:10},
-  {id:'g7',label:'UX 인터뷰',         type:'goal',team:'plan',pct:45,size:10},
-  {id:'g8',label:'IA 재설계',         type:'goal',team:'plan',pct:35,size:10},
-  {id:'g9',label:'리드 전환율',       type:'goal',team:'sales',pct:55,size:11},
-  {id:'g10',label:'신규 채널 발굴',   type:'goal',team:'sales',pct:48,size:10},
-
-  // 할일 — mine: 내 작업
-  {id:'t1',label:'DML 스크립트',       type:'todo',team:'dev', person:'김도현',mine:true, done:true, size:8},
-  {id:'t2',label:'자동화 테스트',      type:'todo',team:'dev', person:'김도현',mine:true, done:false,size:8},
-  {id:'t3',label:'Slack 봇 연동',      type:'todo',team:'dev', person:'김도현',mine:true, done:true, size:8},
-  {id:'t4',label:'Actions 배포',       type:'todo',team:'dev', person:'박민준',mine:false,done:true, size:7},
-  {id:'t5',label:'Docker 최적화',      type:'todo',team:'dev', person:'박민준',mine:false,done:true, size:7},
-  {id:'t6',label:'API 캐싱 개선',      type:'todo',team:'dev', person:'이지훈',mine:false,done:false,size:7},
-  {id:'t7',label:'테크 위키 작성',     type:'todo',team:'dev', person:'이지훈',mine:false,done:true, size:7},
-  {id:'t8',label:'코드 리뷰 체크리스트',type:'todo',team:'dev',person:'박민준',mine:false,done:false,size:7},
-  {id:'t9',label:'UX 인터뷰 진행',     type:'todo',team:'plan',person:'최서연',mine:false,done:true, size:7},
-  {id:'t10',label:'인사이트 문서화',   type:'todo',team:'plan',person:'최서연',mine:false,done:false,size:7},
-  {id:'t11',label:'IA 와이어프레임',   type:'todo',team:'plan',person:'김하늘',mine:false,done:false,size:7},
-  {id:'t12',label:'사용성 테스트',     type:'todo',team:'plan',person:'김하늘',mine:false,done:true, size:7},
-  {id:'t13',label:'경쟁사 벤치마크',  type:'todo',team:'sales',person:'정태양',mine:false,done:true, size:7},
-  {id:'t14',label:'신규 리드 발굴',    type:'todo',team:'sales',person:'정태양',mine:false,done:true, size:7},
-  {id:'t15',label:'파트너 미팅',       type:'todo',team:'sales',person:'유수현',mine:false,done:false,size:7},
-  {id:'t16',label:'채널 분석 리포트',  type:'todo',team:'sales',person:'유수현',mine:false,done:false,size:7},
-  {id:'t17',label:'월별 마감 검토',    type:'todo',team:'acct',person:'이수아', mine:false,done:true, size:7},
-  {id:'t18',label:'결제 알림 시스템',  type:'todo',team:'acct',person:'이수아', mine:false,done:true, size:7},
-  {id:'t19',label:'정산 쿼리 스크립트',type:'todo',team:'acct',person:'장은지', mine:false,done:true, size:7},
-  {id:'t20',label:'이상 거래 탐지',    type:'todo',team:'acct',person:'장은지', mine:false,done:false,size:7},
-  {id:'t21',label:'규정 준수 체크',    type:'todo',team:'acct',person:'이수아', mine:false,done:true, size:7},
+  {id:'i1',label:'반복업무 자동화',      type:'initiative',team:'dev', pct:72,size:19},
+  {id:'i2',label:'커뮤니케이션 효율화',  type:'initiative',team:'dev', pct:55,size:17},
+  {id:'i3',label:'결제 안정성 강화',     type:'initiative',team:'acct',pct:80,size:18},
+  {id:'i4',label:'고객 UX 혁신',         type:'initiative',team:'plan',pct:40,size:16},
+  {id:'i5',label:'Q3 매출 달성',         type:'initiative',team:'sales',pct:62,size:18},
+  {id:'g1',label:'DML 자동화',           type:'goal',team:'dev', pct:75,size:11},
+  {id:'g2',label:'CI/CD 구축',           type:'goal',team:'dev', pct:67,size:11},
+  {id:'g3',label:'Slack 리포트',         type:'goal',team:'dev', pct:60,size:10},
+  {id:'g4',label:'온보딩 문서화',        type:'goal',team:'dev', pct:50,size:10},
+  {id:'g5',label:'결제 오류 감지',       type:'goal',team:'acct',pct:85,size:11},
+  {id:'g6',label:'정산 자동화',          type:'goal',team:'acct',pct:75,size:10},
+  {id:'g7',label:'UX 인터뷰',            type:'goal',team:'plan',pct:45,size:10},
+  {id:'g8',label:'IA 재설계',            type:'goal',team:'plan',pct:35,size:10},
+  {id:'g9',label:'리드 전환율',          type:'goal',team:'sales',pct:55,size:11},
+  {id:'g10',label:'신규 채널 발굴',      type:'goal',team:'sales',pct:48,size:10},
+  {id:'t1', label:'DML 스크립트',        type:'todo',team:'dev', person:'김도현',mine:true, done:true, size:8},
+  {id:'t2', label:'자동화 테스트',       type:'todo',team:'dev', person:'김도현',mine:true, done:false,size:8},
+  {id:'t3', label:'Slack 봇 연동',       type:'todo',team:'dev', person:'김도현',mine:true, done:true, size:8},
+  {id:'t4', label:'Actions 배포',        type:'todo',team:'dev', person:'박민준',mine:false,done:true, size:7},
+  {id:'t5', label:'Docker 최적화',       type:'todo',team:'dev', person:'박민준',mine:false,done:true, size:7},
+  {id:'t6', label:'API 캐싱 개선',       type:'todo',team:'dev', person:'이지훈',mine:false,done:false,size:7},
+  {id:'t7', label:'테크 위키 작성',      type:'todo',team:'dev', person:'이지훈',mine:false,done:true, size:7},
+  {id:'t8', label:'코드 리뷰 체크리스트',type:'todo',team:'dev', person:'박민준',mine:false,done:false,size:7},
+  {id:'t9', label:'UX 인터뷰 진행',      type:'todo',team:'plan',person:'최서연',mine:false,done:true, size:7},
+  {id:'t10',label:'인사이트 문서화',     type:'todo',team:'plan',person:'최서연',mine:false,done:false,size:7},
+  {id:'t11',label:'IA 와이어프레임',     type:'todo',team:'plan',person:'김하늘',mine:false,done:false,size:7},
+  {id:'t12',label:'사용성 테스트',       type:'todo',team:'plan',person:'김하늘',mine:false,done:true, size:7},
+  {id:'t13',label:'경쟁사 벤치마크',    type:'todo',team:'sales',person:'정태양',mine:false,done:true, size:7},
+  {id:'t14',label:'신규 리드 발굴',      type:'todo',team:'sales',person:'정태양',mine:false,done:true, size:7},
+  {id:'t15',label:'파트너 미팅',         type:'todo',team:'sales',person:'유수현',mine:false,done:false,size:7},
+  {id:'t16',label:'채널 분석 리포트',    type:'todo',team:'sales',person:'유수현',mine:false,done:false,size:7},
+  {id:'t17',label:'월별 마감 검토',      type:'todo',team:'acct',person:'이수아', mine:false,done:true, size:7},
+  {id:'t18',label:'결제 알림 시스템',    type:'todo',team:'acct',person:'이수아', mine:false,done:true, size:7},
+  {id:'t19',label:'정산 쿼리 스크립트',  type:'todo',team:'acct',person:'장은지', mine:false,done:true, size:7},
+  {id:'t20',label:'이상 거래 탐지',      type:'todo',team:'acct',person:'장은지', mine:false,done:false,size:7},
+  {id:'t21',label:'규정 준수 체크',      type:'todo',team:'acct',person:'이수아', mine:false,done:true, size:7},
 ];
 
 const EDGES = [
-  // 할일 → 목표
   ['t1','g1'],['t2','g1'],['t6','g1'],
   ['t4','g2'],['t5','g2'],['t8','g2'],
-  ['t3','g3'],
-  ['t7','g4'],
+  ['t3','g3'],['t7','g4'],
   ['t18','g5'],['t20','g5'],['t21','g5'],
   ['t17','g6'],['t19','g6'],
   ['t9','g7'],['t10','g7'],
   ['t11','g8'],['t12','g8'],
   ['t13','g9'],['t14','g9'],
   ['t15','g10'],['t16','g10'],
-  // 목표 → 이니셔티브
   ['g1','i1'],['g2','i1'],['g3','i2'],['g4','i2'],
   ['g5','i3'],['g6','i3'],
   ['g7','i4'],['g8','i4'],
   ['g9','i5'],['g10','i5'],
-  // 크로스팀 연결
+  // 크로스팀
   ['t1','t19'],['t3','t18'],['t2','t10'],
 ];
 
 const CROSS_SET = new Set(['t1-t19','t3-t18','t2-t10']);
+const nodeMap = {};
+NODES.forEach(n => nodeMap[n.id] = n);
 
-function nodeColor(n){
+// ── 색상 헬퍼 ──
+function nColor(n){
   if(n.type==='initiative') return '#151515';
   if(n.type==='goal')       return '#6D6D6D';
   if(n.mine)                return n.done?'#F85100':'#FF6114';
   if(n.team===ME_TEAM)      return n.done?'#FFAF8A':'#FFCFBD';
-  return n.done?'#888888':'#B0B0B3';
+  return n.done?'#888':'#B0B0B3';
 }
-function nodeStroke(n){
-  if(n.type==='initiative') return 'none';
-  if(n.mine)                return '#F85100';
-  if(n.team===ME_TEAM)      return '#FFAF8A';
-  return '#D4D4D6';
+function pColor(pct){
+  return pct>=80?'#1A9F46':pct>=50?'#FF6114':'#FF4242';
 }
-function progColor(pct){
-  if(pct>=80)return'#1A9F46';
-  if(pct>=50)return'#FF6114';
-  return'#FF4242';
-}
-
-const W=window.innerWidth,H=window.innerHeight-52;
-const svg=d3.select('#svg').attr('width',W).attr('height',H);
-const g=svg.append('g');
-svg.call(d3.zoom().scaleExtent([0.2,3]).on('zoom',e=>g.attr('transform',e.transform)));
-
-const edgeData=EDGES.map(([s,t])=>({source:s,target:t,cross:CROSS_SET.has(s+'-'+t)}));
-
-const sim=d3.forceSimulation(NODES)
-  .force('link',d3.forceLink(edgeData).id(d=>d.id)
-    .distance(d=>{
-      const s=d.source,t=d.target;
-      if((typeof s==='object'?s.type:'')==='initiative') return 110;
-      if((typeof s==='object'?s.type:'')==='goal') return 70;
-      return 50;
-    }).strength(0.7))
-  .force('charge',d3.forceManyBody().strength(d=>d.type==='initiative'?-500:d.type==='goal'?-220:-100))
-  .force('center',d3.forceCenter(W/2,H/2))
-  .force('collision',d3.forceCollide(d=>d.size+10));
-
-const linkSel=g.append('g').selectAll('line')
-  .data(edgeData).join('line')
-  .attr('class',d=>d.cross?'link cross':'link');
-
-const nodeSel=g.append('g').selectAll('g')
-  .data(NODES).join('g').attr('class','node')
-  .call(d3.drag()
-    .on('start',(e,d)=>{if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y})
-    .on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y})
-    .on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null}))
-  .on('click',(e,d)=>{e.stopPropagation();selectNode(d);})
-  .on('mouseover',(e,d)=>{
-    const tt=document.getElementById('tt');
-    document.getElementById('tt-t').textContent=d.label;
-    let meta='';
-    if(d.type==='initiative') meta=`🚀 이니셔티브 · ${d.pct}% 달성`;
-    else if(d.type==='goal')  meta=`🎯 목표 · ${d.pct}% 완료`;
-    else meta=`${d.mine?'👤 나 ':'👥 '}${d.person||''} · ${TEAM_NAME[d.team]} · ${d.done?'✅ 완료':'🔄 진행중'}`;
-    document.getElementById('tt-m').textContent=meta;
-    tt.style.display='block';tt.style.left=(e.pageX+14)+'px';tt.style.top=(e.pageY-10)+'px';
-  })
-  .on('mousemove',e=>{
-    const tt=document.getElementById('tt');
-    tt.style.left=(e.pageX+14)+'px';tt.style.top=(e.pageY-10)+'px';
-  })
-  .on('mouseleave',()=>{ document.getElementById('tt').style.display='none'; });
-
-nodeSel.append('circle')
-  .attr('r',d=>d.size)
-  .attr('fill',d=>nodeColor(d))
-  .attr('stroke',d=>nodeStroke(d))
-  .attr('stroke-width',d=>d.mine?2.5:d.type==='goal'?1.5:0);
-
-nodeSel.append('text')
-  .attr('dy',d=>-(d.size+5))
-  .attr('text-anchor','middle')
-  .attr('font-size',d=>d.type==='initiative'?12:d.type==='goal'?11:10)
-  .attr('font-weight',d=>d.type==='initiative'?700:d.type==='goal'?600:400)
-  .attr('fill',d=>d.type==='initiative'?'#151515':d.mine?'#F85100':'#6D6D6D')
-  .text(d=>d.label);
-
-sim.on('tick',()=>{
-  linkSel.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y)
-         .attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
-  nodeSel.attr('transform',d=>`translate(${d.x},${d.y})`);
-});
-
-svg.on('click',()=>{ deselectNode(); closePanel(); });
-
-let selectedId=null;
-const nodeMap={};
-NODES.forEach(n=>nodeMap[n.id]=n);
-
 function getConnected(id){
   const s=new Set([id]);
   EDGES.forEach(([a,b])=>{if(a===id)s.add(b);if(b===id)s.add(a);});
   return s;
 }
 
-function selectNode(d){
-  selectedId=d.id;
-  const conn=getConnected(d.id);
-  nodeSel.classed('dim',n=>!conn.has(n.id));
-  nodeSel.classed('selected',n=>n.id===d.id);
-  linkSel.classed('hl',l=>l.source.id===d.id||l.target.id===d.id);
-  linkSel.classed('dim',l=>l.source.id!==d.id&&l.target.id!==d.id);
-  openPanel(d,conn);
-}
-function deselectNode(){
-  selectedId=null;
-  nodeSel.classed('dim',false).classed('selected',false);
-  linkSel.classed('hl',false).classed('dim',false);
-}
-
-function openPanel(d,conn){
+// ═══════════════════════════════════════
+//  공통 패널
+// ═══════════════════════════════════════
+function openPanel(d){
   const typeLabel={initiative:'🚀 이니셔티브',goal:'🎯 목표',todo:'✅ 할일'};
-  document.getElementById('panel-title').textContent=d.label;
-  const pc=d.pct!=null?progColor(d.pct):'#FF6114';
-
-  let html=`<div class="p-type">${typeLabel[d.type]||''} · ${TEAM_NAME[d.team]}</div>`;
-
+  document.getElementById('panel-title').textContent = d.label;
+  const pc = d.pct!=null ? pColor(d.pct) : '#FF6114';
+  let html = `<div class="p-type">${typeLabel[d.type]||''} · ${TEAM_NAME[d.team]}</div>`;
   if(d.type==='todo'){
-    const statusCol=d.done?'#1A9F46':'#FF6114';
-    html+=`<span class="p-badge" style="background:${d.done?'#E8F9F0':'#FFF4EE'};color:${statusCol}">${d.done?'✅ 완료':'🔄 진행중'}</span>`;
-    if(d.mine) html+=`<span class="p-badge" style="background:#FFEFE7;color:#F85100;margin-left:4px">👤 나의 작업</span>`;
-    if(d.person) html+=`<div style="font-size:12px;color:#888;margin-bottom:12px">담당: ${d.person}</div>`;
+    const sc = d.done?'#1A9F46':'#FF6114';
+    html += `<span class="p-badge" style="background:${d.done?'#E8F9F0':'#FFF4EE'};color:${sc}">${d.done?'✅ 완료':'🔄 진행중'}</span>`;
+    if(d.mine) html += `<span class="p-badge" style="background:#FFEFE7;color:#F85100;margin-left:4px">👤 나의 작업</span>`;
+    if(d.person) html += `<div style="font-size:12px;color:#888;margin-bottom:12px">담당: ${d.person}</div>`;
   }
-
   if(d.pct!=null){
-    html+=`<div class="p-prog-wrap">
+    html += `<div class="p-prog-wrap">
       <div class="p-prog-label"><span>진척도</span><span style="color:${pc};font-weight:700">${d.pct}%</span></div>
       <div class="p-prog-bar"><div class="p-prog-fill" style="width:${d.pct}%;background:${pc}"></div></div>
     </div>`;
   }
-
-  // 연결된 노드들
-  const connNodes=[...conn].filter(id=>id!==d.id).map(id=>nodeMap[id]).filter(Boolean);
-  if(connNodes.length){
-    const byType={initiative:[],goal:[],todo:[]};
-    connNodes.forEach(n=>byType[n.type].push(n));
-    const order=['initiative','goal','todo'];
-    const secName={initiative:'이니셔티브',goal:'목표',todo:'할일'};
-    order.forEach(t=>{
-      if(!byType[t].length) return;
-      html+=`<div class="p-sec">${secName[t]} (${byType[t].length})</div>`;
-      byType[t].forEach(n=>{
-        const col=nodeColor(n);
-        const status=n.type==='todo'
-          ?`<span class="${n.done?'p-status-done':'p-status-doing'}">${n.done?'완료':'진행중'}</span>`
-          :n.pct!=null?`<span style="color:${progColor(n.pct)};font-size:11px;font-weight:700;margin-left:auto">${n.pct}%</span>`:'';
-        html+=`<div class="p-item" onclick="selectNodeById('${n.id}')">
-          <div class="p-dot" style="background:${col}"></div>
-          <span>${n.label}</span>${status}
-        </div>`;
-      });
+  const conn = [...getConnected(d.id)].filter(x=>x!==d.id).map(x=>nodeMap[x]).filter(Boolean);
+  const byType={initiative:[],goal:[],todo:[]};
+  conn.forEach(n=>byType[n.type].push(n));
+  ['initiative','goal','todo'].forEach(t=>{
+    if(!byType[t].length) return;
+    html += `<div class="p-sec">${{initiative:'이니셔티브',goal:'목표',todo:'할일'}[t]} (${byType[t].length})</div>`;
+    byType[t].forEach(n=>{
+      const stat = n.type==='todo'
+        ? `<span class="${n.done?'p-stat-done':'p-stat-doing'}">${n.done?'완료':'진행중'}</span>`
+        : n.pct!=null?`<span style="color:${pColor(n.pct)};font-size:11px;font-weight:700;margin-left:auto">${n.pct}%</span>`:'';
+      html += `<div class="p-item" onclick="panelClickNode('${n.id}')">
+        <div class="p-dot" style="background:${nColor(n)}"></div><span>${n.label}</span>${stat}
+      </div>`;
     });
-  }
-
-  // 크로스팀 연결
-  const crossConn=connNodes.filter(n=>n.type==='todo'&&n.team!==ME_TEAM);
+  });
+  const crossConn = conn.filter(n=>n.type==='todo'&&n.team!==ME_TEAM);
   if(crossConn.length){
-    html+=`<div style="margin-top:14px;padding:10px;background:#FFF4EE;border-radius:8px;border:1px solid #FFCFBD">
+    html += `<div style="margin-top:14px;padding:10px;background:#FFF4EE;border-radius:8px;border:1px solid #FFCFBD">
       <div style="font-size:10px;font-weight:700;color:#F85100;margin-bottom:5px">🔗 크로스팀 연관</div>
       ${crossConn.map(n=>`<div style="font-size:11px;color:#888;margin-bottom:2px">${TEAM_NAME[n.team]} · ${n.person} — ${n.label}</div>`).join('')}
     </div>`;
   }
-
-  document.getElementById('panel-body').innerHTML=html;
+  document.getElementById('panel-body').innerHTML = html;
   document.getElementById('panel').classList.add('open');
 }
-
 function closePanel(){
   document.getElementById('panel').classList.remove('open');
-  deselectNode();
+  forceDeselect();
+  radialDeselect();
+}
+function panelClickNode(id){
+  const n=nodeMap[id]; if(!n) return;
+  openPanel(n);
+  const cv=document.querySelector('.view-wrap.active').id;
+  if(cv==='view-force') forceSelect(n);
+  if(cv==='view-radial') radialSelect(n);
 }
 
-function selectNodeById(id){
-  const n=nodeMap[id];
-  if(n)selectNode(n);
-}
+// ═══════════════════════════════════════
+//  뷰 전환
+// ═══════════════════════════════════════
+let currentView = 'force';
+let radialBuilt = false;
+let treeBuilt = false;
 
-let curFilter='all';
-function setFilter(team,btn){
-  curFilter=team;
-  document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on'));
+function switchView(v, btn){
+  document.querySelectorAll('.vt-btn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  if(team==='all'){
-    nodeSel.classed('dim',false);
-    linkSel.classed('dim',false);
-  } else {
-    const relevant=new Set(NODES.filter(n=>n.team===team||n.type==='initiative'||n.type==='goal').map(n=>n.id));
-    nodeSel.classed('dim',n=>n.type==='todo'&&n.team!==team);
-    linkSel.classed('dim',l=>{
-      const si=typeof l.source==='object'?l.source.id:l.source;
-      const ti=typeof l.target==='object'?l.target.id:l.target;
-      return !relevant.has(si)||!relevant.has(ti);
-    });
+  document.querySelectorAll('.view-wrap').forEach(el=>el.classList.remove('active'));
+
+  closePanel();
+  currentView = v;
+
+  if(v==='force'){
+    document.getElementById('view-force').classList.add('active');
+    document.getElementById('team-filters').style.display='flex';
+  } else if(v==='radial'){
+    document.getElementById('view-radial').classList.add('active');
+    document.getElementById('team-filters').style.display='none';
+    if(!radialBuilt){ buildRadial(); radialBuilt=true; }
+  } else if(v==='tree'){
+    document.getElementById('view-tree').classList.add('active');
+    document.getElementById('team-filters').style.display='none';
+    if(!treeBuilt){ buildTree(); treeBuilt=true; }
   }
 }
 
-window.addEventListener('resize',()=>{
-  const w=window.innerWidth,h=window.innerHeight-52;
-  svg.attr('width',w).attr('height',h);
-  sim.force('center',d3.forceCenter(w/2,h/2)).alpha(0.3).restart();
-});
+// ═══════════════════════════════════════
+//  뷰 A: Force 그래프
+// ═══════════════════════════════════════
+(function initForce(){
+  const W=window.innerWidth, H=window.innerHeight-52;
+  const svg=d3.select('#force-svg').attr('width',W).attr('height',H);
+  const g=svg.append('g');
+  svg.call(d3.zoom().scaleExtent([0.2,3]).on('zoom',e=>g.attr('transform',e.transform)));
+
+  const nodesClone = NODES.map(n=>({...n}));
+  const nodeCloneMap={};
+  nodesClone.forEach(n=>nodeCloneMap[n.id]=n);
+
+  const edgeData=EDGES.map(([s,t])=>({source:s,target:t,cross:CROSS_SET.has(s+'-'+t)}));
+
+  const sim=d3.forceSimulation(nodesClone)
+    .force('link',d3.forceLink(edgeData).id(d=>d.id)
+      .distance(d=>{
+        const st=typeof d.source==='object'?d.source.type:'';
+        return st==='initiative'?110:st==='goal'?70:50;
+      }).strength(0.7))
+    .force('charge',d3.forceManyBody().strength(d=>d.type==='initiative'?-500:d.type==='goal'?-220:-100))
+    .force('center',d3.forceCenter(W/2,H/2))
+    .force('collision',d3.forceCollide(d=>d.size+10));
+
+  const linkSel=g.append('g').selectAll('line').data(edgeData).join('line')
+    .attr('class',d=>d.cross?'link cross':'link');
+
+  const nodeSel=g.append('g').selectAll('g').data(nodesClone).join('g').attr('class','node')
+    .call(d3.drag()
+      .on('start',(e,d)=>{if(!e.active)sim.alphaTarget(0.3).restart();d.fx=d.x;d.fy=d.y})
+      .on('drag',(e,d)=>{d.fx=e.x;d.fy=e.y})
+      .on('end',(e,d)=>{if(!e.active)sim.alphaTarget(0);d.fx=null;d.fy=null}))
+    .on('click',(e,d)=>{e.stopPropagation();forceSelect(nodeMap[d.id]);openPanel(nodeMap[d.id]);})
+    .on('mouseover',(e,d)=>showTT(e,nodeMap[d.id]))
+    .on('mousemove',e=>moveTT(e))
+    .on('mouseleave',()=>hideTT());
+
+  nodeSel.append('circle')
+    .attr('r',d=>d.size)
+    .attr('fill',d=>nColor(nodeMap[d.id]))
+    .attr('stroke',d=>d.mine?'#F85100':d.type==='goal'?'#D4D4D6':'none')
+    .attr('stroke-width',d=>d.mine?2.5:1.5);
+
+  nodeSel.append('text')
+    .attr('dy',d=>-(d.size+5)).attr('text-anchor','middle')
+    .attr('font-size',d=>d.type==='initiative'?12:d.type==='goal'?11:10)
+    .attr('font-weight',d=>d.type==='initiative'?700:d.type==='goal'?600:400)
+    .attr('fill',d=>d.type==='initiative'?'#151515':nodeMap[d.id].mine?'#F85100':'#6D6D6D')
+    .text(d=>d.label);
+
+  sim.on('tick',()=>{
+    linkSel.attr('x1',d=>d.source.x).attr('y1',d=>d.source.y)
+           .attr('x2',d=>d.target.x).attr('y2',d=>d.target.y);
+    nodeSel.attr('transform',d=>`translate(${d.x},${d.y})`);
+  });
+
+  svg.on('click',()=>{closePanel();});
+
+  function forceSelectInner(n){
+    if(!n){forceDeselect();return;}
+    const conn=getConnected(n.id);
+    nodeSel.classed('dim',d=>!conn.has(d.id)).classed('selected',d=>d.id===n.id);
+    linkSel.classed('hl',l=>l.source.id===n.id||l.target.id===n.id).classed('dim',l=>l.source.id!==n.id&&l.target.id!==n.id);
+  }
+  window.forceSelect=n=>forceSelectInner(n);
+  window.forceDeselect=()=>{ nodeSel.classed('dim',false).classed('selected',false); linkSel.classed('hl',false).classed('dim',false); };
+
+  window.setTeamFilter=function(team,btn){
+    document.querySelectorAll('.fb').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
+    if(team==='all'){nodeSel.classed('dim',false);linkSel.classed('dim',false);}
+    else{
+      nodeSel.classed('dim',d=>d.type==='todo'&&d.team!==team);
+      linkSel.classed('dim',l=>{
+        const s=typeof l.source==='object'?l.source:nodeCloneMap[l.source];
+        const t=typeof l.target==='object'?l.target:nodeCloneMap[l.target];
+        return (s&&s.type==='todo'&&s.team!==team)||(t&&t.type==='todo'&&t.team!==team);
+      });
+    }
+  };
+
+  window.addEventListener('resize',()=>{
+    const w=window.innerWidth,h=window.innerHeight-52;
+    svg.attr('width',w).attr('height',h);
+    sim.force('center',d3.forceCenter(w/2,h/2)).alpha(0.3).restart();
+  });
+})();
+
+// ═══════════════════════════════════════
+//  뷰 B: 방사형
+// ═══════════════════════════════════════
+function buildRadial(){
+  const W=window.innerWidth, H=window.innerHeight-52;
+  const CX=W/2, CY=H/2;
+  const svg=d3.select('#radial-svg').attr('width',W).attr('height',H);
+  const root=svg.append('g');
+  svg.call(d3.zoom().scaleExtent([0.3,2.5]).on('zoom',e=>root.attr('transform',e.transform)));
+
+  const initiatives=NODES.filter(n=>n.type==='initiative');
+  const goals=NODES.filter(n=>n.type==='goal');
+  const todos=NODES.filter(n=>n.type==='todo');
+  const N=initiatives.length;
+
+  // 레이아웃 계산
+  initiatives.forEach((ini,ii)=>{
+    const angle=(ii/N)*2*Math.PI-Math.PI/2;
+    const R=H*.26;
+    ini._rx=CX+R*Math.cos(angle); ini._ry=CY+R*Math.sin(angle);
+    const childGoals=goals.filter(g=>g.parent===ini.id||EDGES.some(([a,b])=>a===g.id&&b===ini.id||a===ini.id&&b===g.id&&g.type==='goal'));
+    // parent 세팅
+    goals.forEach(g=>{if(EDGES.some(([a,b])=>a===g.id&&b===ini.id))g._parent=ini.id;});
+    const cg=goals.filter(g=>g._parent===ini.id);
+    cg.forEach((g,gi)=>{
+      const spread=(cg.length-1)*.38;
+      const ba=angle-spread/2+gi/Math.max(cg.length-1,1)*spread;
+      const gr=R+H*.14;
+      g._rx=CX+gr*Math.cos(ba); g._ry=CY+gr*Math.sin(ba);
+      const ct=todos.filter(t=>EDGES.some(([a,b])=>a===t.id&&b===g.id));
+      ct.forEach((t,ti)=>{
+        const ts=(ct.length-1)*.22;
+        const ta=ba-ts/2+ti/Math.max(ct.length-1,1)*ts;
+        const tr=gr+H*.12;
+        t._rx=CX+tr*Math.cos(ta); t._ry=CY+tr*Math.sin(ta);
+      });
+    });
+  });
+
+  // 엣지
+  const allEdges=[];
+  EDGES.forEach(([s,t])=>{
+    const sn=nodeMap[s],tn=nodeMap[t];
+    if(sn&&tn) allEdges.push({s:sn,t:tn,cross:CROSS_SET.has(s+'-'+t)});
+  });
+  // hub lines
+  initiatives.forEach(ini=>allEdges.push({s:{_rx:CX,_ry:CY},t:ini,hub:true,cross:false}));
+
+  const edgeSel=root.append('g').selectAll('line').data(allEdges).join('line')
+    .attr('class',d=>d.cross?'r-edge cross':d.hub?'r-edge hub':'r-edge')
+    .attr('x1',d=>d.s._rx||0).attr('y1',d=>d.s._ry||0)
+    .attr('x2',d=>d.t._rx||0).attr('y2',d=>d.t._ry||0)
+    .attr('stroke',d=>d.hub?'#E5E5E8':'');
+
+  // hub node
+  root.append('circle').attr('cx',CX).attr('cy',CY).attr('r',10).attr('fill','#F85100');
+  root.append('text').attr('x',CX).attr('y',CY+24).attr('text-anchor','middle')
+    .attr('font-size',10).attr('fill','#888').attr('font-family',"'Pretendard',-apple-system,sans-serif").text('전사');
+
+  const rNodes=NODES.filter(n=>n._rx!=null);
+  const nodeSel=root.append('g').selectAll('g').data(rNodes).join('g')
+    .attr('transform',d=>`translate(${d._rx},${d._ry})`)
+    .style('cursor','pointer')
+    .on('click',(e,d)=>{e.stopPropagation();radialSelect(d);openPanel(d);})
+    .on('mouseover',(e,d)=>showTT(e,d))
+    .on('mousemove',e=>moveTT(e))
+    .on('mouseleave',()=>hideTT());
+
+  nodeSel.append('circle').attr('r',d=>d.size)
+    .attr('fill',d=>nColor(d))
+    .attr('stroke',d=>d.mine?'#F85100':d.type==='goal'?'#D4D4D6':'none')
+    .attr('stroke-width',d=>d.mine?2.5:1.5);
+  nodeSel.append('text')
+    .attr('dy',d=>-(d.size+5)).attr('text-anchor','middle')
+    .attr('font-size',d=>d.type==='initiative'?12:d.type==='goal'?11:10)
+    .attr('font-weight',d=>d.type==='initiative'?700:d.type==='goal'?600:400)
+    .attr('fill',d=>d.type==='initiative'?'#151515':d.mine?'#F85100':'#6D6D6D')
+    .attr('font-family',"'Pretendard',-apple-system,sans-serif")
+    .text(d=>d.label);
+
+  svg.on('click',()=>{closePanel();radialDeselect();});
+
+  window.radialSelect=function(n){
+    const conn=getConnected(n.id);
+    nodeSel.style('opacity',d=>conn.has(d.id)?1:0.1);
+    edgeSel.classed('r-edge hl',l=>{
+      const si=l.s.id,ti=l.t.id;
+      return si===n.id||ti===n.id;
+    });
+  };
+  window.radialDeselect=function(){
+    nodeSel.style('opacity',1);
+    edgeSel.classed('hl',false);
+  };
+}
+
+// ═══════════════════════════════════════
+//  뷰 C: 트리
+// ═══════════════════════════════════════
+function buildTree(){
+  const initiatives=NODES.filter(n=>n.type==='initiative');
+  const goals=NODES.filter(n=>n.type==='goal');
+  const todos=NODES.filter(n=>n.type==='todo');
+
+  // goal parent 매핑
+  const goalParent={};
+  EDGES.forEach(([a,b])=>{if(nodeMap[a]&&nodeMap[b]&&nodeMap[a].type==='goal'&&nodeMap[b].type==='initiative')goalParent[a]=b;});
+  const todoGoal={};
+  EDGES.forEach(([a,b])=>{if(nodeMap[a]&&nodeMap[b]&&nodeMap[a].type==='todo'&&nodeMap[b].type==='goal')todoGoal[a]=b;});
+
+  function tcClass(t){
+    if(t.mine) return t.done?'tc-me-done':'tc-me-doing';
+    if(t.team===ME_TEAM) return t.done?'tc-team-done':'tc-team-doing';
+    return t.done?'tc-other-done':'tc-other-doing';
+  }
+
+  let html='';
+  initiatives.forEach(ini=>{
+    const pc=pColor(ini.pct);
+    const childGoals=goals.filter(g=>goalParent[g.id]===ini.id);
+    html+=`<div style="margin-bottom:32px">
+      <div style="padding:24px 24px 0">
+        <div class="ini-card" onclick="treeClickNode('${ini.id}')">
+          <div class="ini-lbl">이니셔티브 · ${TEAM_NAME[ini.team]}</div>
+          <div class="ini-ttl">${ini.label}</div>
+          <div class="ini-bar"><div class="ini-bar-fill" style="width:${ini.pct}%;background:${pc}"></div></div>
+          <div class="ini-pct">${ini.pct}% 달성</div>
+        </div>
+      </div>`;
+    if(childGoals.length){
+      html+=`<div style="padding:0 40px;margin-top:10px">`;
+      childGoals.forEach(g=>{
+        const gpc=pColor(g.pct);
+        const myTeam=g.team===ME_TEAM;
+        const ct=todos.filter(t=>todoGoal[t.id]===g.id);
+        html+=`<div style="display:flex;align-items:flex-start;gap:0;margin-bottom:10px">
+          <div style="width:24px;display:flex;flex-direction:column;align-items:center;padding-top:10px">
+            <div style="width:1.5px;height:10px;background:#E5E5E8"></div>
+            <div style="width:6px;height:6px;border-radius:50%;background:${myTeam?'#FFAF8A':'#B0B0B3'};flex-shrink:0"></div>
+            <div style="width:1.5px;flex:1;background:#E5E5E8"></div>
+          </div>
+          <div style="flex:1">
+            <div class="goal-card${myTeam?' my-team':''}" onclick="treeClickNode('${g.id}')">
+              <div class="goal-lbl">목표 · ${TEAM_NAME[g.team]}</div>
+              <div class="goal-ttl">${g.label}</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <div class="goal-bar" style="flex:1"><div class="goal-bar-fill" style="width:${g.pct}%;background:${gpc}"></div></div>
+                <span style="font-size:11px;color:${gpc};font-weight:700;flex-shrink:0">${g.pct}%</span>
+              </div>
+            </div>
+            ${ct.length?`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-left:4px">
+              ${ct.map(t=>`<div class="todo-chip ${tcClass(t)}" onclick="treeClickNode('${t.id}')">${t.mine?'👤 ':''}${t.label}</div>`).join('')}
+            </div>`:''}
+          </div>
+        </div>`;
+      });
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  });
+  document.getElementById('tree-scroll').innerHTML=html;
+
+  window.treeClickNode=function(id){
+    const n=nodeMap[id]; if(!n) return;
+    openPanel(n);
+    // 트리 뷰는 패널만 열림 (하이라이트 없음, 스크롤 기반이라 skip)
+  };
+}
+
+// ═══════════════════════════════════════
+//  툴팁
+// ═══════════════════════════════════════
+function showTT(e,d){
+  document.getElementById('tt-t').textContent=d.label;
+  let meta='';
+  if(d.type==='initiative') meta=`🚀 이니셔티브 · ${d.pct}% 달성`;
+  else if(d.type==='goal') meta=`🎯 목표 · ${d.pct}% 완료`;
+  else meta=`${d.mine?'👤 나 ':'👥 '}${d.person||''} · ${TEAM_NAME[d.team]} · ${d.done?'✅ 완료':'🔄 진행중'}`;
+  document.getElementById('tt-m').textContent=meta;
+  const tt=document.getElementById('tt');
+  tt.style.display='block';tt.style.left=(e.pageX+14)+'px';tt.style.top=(e.pageY-10)+'px';
+}
+function moveTT(e){const tt=document.getElementById('tt');tt.style.left=(e.pageX+14)+'px';tt.style.top=(e.pageY-10)+'px';}
+function hideTT(){document.getElementById('tt').style.display='none';}
 </script>
 </body>
 </html>
