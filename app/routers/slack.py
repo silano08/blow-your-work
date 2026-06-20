@@ -26,7 +26,7 @@ async def _post_slack(payload: dict) -> bool:
 
 
 def _relation_emoji(relation: str | None) -> str:
-    return {"grand": "🎯", "small": "📌"}.get(relation or "none", "—")
+    return {"initiative": "🚀", "goal": "🎯", "grand": "🚀", "small": "🎯"}.get(relation or "none", "—")
 
 
 # ── 일일 요약 ──────────────────────────────────────────────────────────────
@@ -68,18 +68,18 @@ async def _build_daily_summary(db: aiosqlite.Connection, team_id: int, target_da
             continue
 
         done = sum(1 for t in todos if t["status"] == "done")
-        grand = sum(1 for t in todos if t["relation"] == "grand")
-        small = sum(1 for t in todos if t["relation"] == "small")
+        initiative = sum(1 for t in todos if t["relation"] in ("initiative", "grand"))
+        goal = sum(1 for t in todos if t["relation"] in ("goal", "small"))
         total_todos += len(todos)
         done_todos += done
-        grand_count += grand
-        small_count += small
+        grand_count += initiative
+        small_count += goal
 
         pct = int(done / len(todos) * 100)
         bar = "█" * (pct // 20) + "░" * (5 - pct // 20)
         lines.append(
             f"  • *{m['username']}* `{bar}` {done}/{len(todos)} 완료"
-            f"  🎯{grand} 📌{small}"
+            f"  🚀{initiative} 🎯{goal}"
         )
 
     total_pct = int(done_todos / total_todos * 100) if total_todos else 0
@@ -97,7 +97,7 @@ async def _build_daily_summary(db: aiosqlite.Connection, team_id: int, target_da
             "type": "section",
             "fields": [
                 {"type": "mrkdwn", "text": f"*✅ 팀 완료율*\n`{total_pct}%` ({done_todos}/{total_todos})"},
-                {"type": "mrkdwn", "text": f"*🎯 목표 기여율*\n`{contrib_pct}%` (대+소전제 연관)"},
+                {"type": "mrkdwn", "text": f"*🎯 목표 기여율*\n`{contrib_pct}%` (이니셔티브+목표 연관)"},
             ],
         },
         {
