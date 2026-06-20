@@ -242,8 +242,10 @@ async def _seed(db: aiosqlite.Connection) -> None:
         ],
     )
 
-    # ── AI Decisions seed ──────────────────────────────────────────────────
-    await db.executemany(
+    # ── AI Decisions seed (빈 테이블일 때만 삽입) ─────────────────────────
+    _cnt = (await (await db.execute("SELECT COUNT(*) FROM ai_decisions")).fetchone())[0]
+    if _cnt == 0:
+        await db.executemany(
         """INSERT OR IGNORE INTO ai_decisions
            (id, decision_type, input_summary, ai_output, reasoning, confidence,
             ref_todo_id, ref_premise_id, status)
@@ -290,7 +292,7 @@ async def _seed(db: aiosqlite.Connection) -> None:
              "'Docker', '이미지 최적화'가 '배포 파이프라인 구축하기'와 83% 매칭. 단, '반복업무 자동화'와도 78% 유사. 중복 가능성 있음.",
              0.83, 9, 7, 'pending'),
         ]
-    )
+        )
 
     await db.commit()
 
