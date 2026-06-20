@@ -614,16 +614,10 @@
     <!-- Sidebar / Drawer -->
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo"><span>🧠</span> Hivemind</div>
-      <div class="sidebar-section">나의 작업</div>
-      <button class="nav-item active" onclick="showPage('home',this)"><span class="nav-icon">🏠</span> 오늘 스크럼</button>
-      <div class="sidebar-section">팀</div>
+      <button class="nav-item active" onclick="showPage('home',this)"><span class="nav-icon">🏠</span> 대시보드</button>
       <button class="nav-item" onclick="showPage('team',this)"><span class="nav-icon">👥</span> 팀 현황</button>
-      <div class="sidebar-section">목표</div>
-      <button class="nav-item" onclick="showPage('premises',this)"><span class="nav-icon">🎯</span> 이니셔티브 / 목표</button>
-      <div class="sidebar-section">AI</div>
-      <button class="nav-item" onclick="showPage('audit',this)"><span class="nav-icon">🔍</span> AI 감사</button>
-      <div class="sidebar-section">커뮤니케이션</div>
-      <button class="nav-item" onclick="showPage('mail',this)"><span class="nav-icon">📧</span> 메일 미리보기</button>
+      <button class="nav-item" onclick="showPage('premises',this)"><span class="nav-icon">🎯</span> 목표 관리</button>
+      <button class="nav-item" onclick="showPage('audit',this)"><span class="nav-icon">🤖</span> AI 감사</button>
       <div class="sidebar-user">
         <div class="user-avatar" id="sidebar-avatar">😊</div>
         <div class="user-info">
@@ -637,7 +631,7 @@
     <!-- Main -->
     <div class="main-content">
       <div class="page-header">
-        <div class="page-title" id="page-title">오늘 스크럼</div>
+        <div class="page-title" id="page-title">대시보드</div>
         <div class="page-date" id="page-date"></div>
       </div>
       <div class="content-area" id="content-area"></div>
@@ -648,7 +642,7 @@
   <nav class="bottom-nav">
     <div class="bottom-nav-inner">
       <button class="bottom-nav-item active" id="bnav-home" onclick="showPage('home',this,'bnav-home')">
-        <span class="bnav-icon">🏠</span><span>스크럼</span>
+        <span class="bnav-icon">🏠</span><span>대시보드</span>
       </button>
       <button class="bottom-nav-item" id="bnav-team" onclick="showPage('team',this,'bnav-team')">
         <span class="bnav-icon">👥</span><span>팀</span>
@@ -657,7 +651,7 @@
         <span class="bnav-icon">🎯</span><span>목표</span>
       </button>
       <button class="bottom-nav-item" id="bnav-audit" onclick="showPage('audit',this,'bnav-audit')">
-        <span class="bnav-icon">🔍</span><span>AI 감사</span>
+        <span class="bnav-icon">🤖</span><span>AI 감사</span>
       </button>
     </div>
   </nav>
@@ -915,11 +909,10 @@ function closeDrawer() {
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 const pageTitles = {
-  home: '오늘 스크럼',
+  home: '대시보드',
   team: '팀 현황',
-  premises: '이니셔티브 / 목표',
+  premises: '목표 관리',
   audit: 'AI 감사',
-  mail: '메일 미리보기',
 };
 
 function showPage(page, navEl, bnavId) {
@@ -927,19 +920,13 @@ function showPage(page, navEl, bnavId) {
   document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
   if (navEl && navEl.closest('.sidebar')) navEl.classList.add('active');
   else {
-    const pageLabelMap = {
-      home: '오늘 스크럼',
-      team: '팀 현황',
-      premises: '이니셔티브 / 목표',
-      audit: 'AI 감사',
-      mail: '메일 미리보기',
-    };
+    const labelMap = { home:'대시보드', team:'팀 현황', premises:'목표 관리', audit:'AI 감사' };
     const match = [...document.querySelectorAll('.sidebar .nav-item')]
-      .find(n => n.textContent.trim().includes(pageLabelMap[page] || pageTitles[page] || ''));
+      .find(n => n.textContent.trim().includes(labelMap[page] || ''));
     if (match) match.classList.add('active');
   }
   document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
-  const bnavMap = { home:'bnav-home', team:'bnav-team', premises:'bnav-premises', audit:'bnav-audit', mail:'bnav-audit' };
+  const bnavMap = { home:'bnav-home', team:'bnav-team', premises:'bnav-premises', audit:'bnav-audit' };
   const bnavEl = document.getElementById(bnavId || bnavMap[page]);
   if (bnavEl) bnavEl.classList.add('active');
 
@@ -947,7 +934,7 @@ function showPage(page, navEl, bnavId) {
   if (document.getElementById('page-title')) document.getElementById('page-title').textContent = title;
   if (document.getElementById('mobile-page-title')) document.getElementById('mobile-page-title').textContent = title;
 
-  const pages = { home: renderHome, team: renderTeam, premises: renderPremises, audit: renderAudit, mail: renderMail };
+  const pages = { home: renderHome, team: renderTeam, premises: renderPremises, audit: renderAudit };
   const fn = pages[page];
   if (fn) fn();
 }
@@ -1007,107 +994,158 @@ function onTodoInput(val) {
   if (val) document.getElementById('ai-recommend-box')?.classList.remove('show');
 }
 
-// ── Home Page ─────────────────────────────────────────────────────────────
+// ── Home Page (대시보드) ───────────────────────────────────────────────────
 function renderHome() {
   const todayTodos = todos.filter(t => t.status !== 'done');
-  const doneTodos = todos.filter(t => t.status === 'done');
-  const focusTodo = todos.find(t => t.analysis?.relation === 'initiative' && t.status !== 'done') || todos.find(t => t.status !== 'done');
-  const doneCount = doneTodos.length;
-  const todoCount = todayTodos.length;
+  const doneTodos  = todos.filter(t => t.status === 'done');
+  const focusTodo  = todos.find(t => t.analysis?.relation === 'initiative' && t.status !== 'done')
+                  || todos.find(t => t.status !== 'done');
+  const doneCount  = doneTodos.length;
+  const todoCount  = todayTodos.length;
+  const total      = todos.length;
+  const donePct    = total ? Math.round(doneCount / total * 100) : 0;
 
   document.getElementById('content-area').innerHTML = `
-    ${focusTodo ? `
-    <div class="focus-card">
-      <div class="focus-label">🎯 오늘 집중할 1가지 (AI 추천)</div>
-      <div class="focus-title">${esc(focusTodo.title)}</div>
-      <div class="focus-reason">${focusTodo.analysis?.relation==='initiative'?'이니셔티브 기여도가 높은 작업입니다':'지금 가장 중요한 작업이에요'}</div>
-    </div>` : ''}
 
-    <div class="async-scrum-banner">
-      <div class="scrum-row">
-        <span class="scrum-icon">✅</span>
-        <div>
-          <div class="scrum-label">오늘 완료한 일</div>
-          <div class="scrum-value" id="scrum-yesterday">${doneCount}건 완료</div>
-        </div>
+    <!-- ①  전사 집단지성 그래프 — 풀위드 메인 비주얼 -->
+    <div style="border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--primary-border);margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg-01);border-bottom:1px solid var(--border)">
+        <span style="font-size:15px">🧠</span>
+        <span style="font-weight:700;font-size:14px;letter-spacing:-0.02em">전사 집단지성 그래프</span>
+        <span style="font-size:11px;color:var(--text-03)">— 지금 전사가 어디로 향하는지</span>
+        <span style="margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--primary);font-weight:700">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--primary);animation:blink 1.6s ease-in-out infinite;display:inline-block"></span>LIVE
+        </span>
+        <a href="/static/graph-b.html" target="_blank"
+          style="font-size:11px;color:var(--primary);text-decoration:none;padding:4px 10px;border:1px solid var(--primary-border);border-radius:6px;font-weight:600;margin-left:8px">
+          전체화면 ↗
+        </a>
       </div>
-      <div class="scrum-row">
-        <span class="scrum-icon">🎯</span>
-        <div>
-          <div class="scrum-label">오늘 집중할 일</div>
-          <div class="scrum-value">${todoCount}건 예정</div>
-        </div>
+      <iframe src="/static/graph-b.html" loading="lazy"
+        style="width:100%;height:380px;border:none;display:block"
+        title="전사 집단지성 그래프"></iframe>
+    </div>
+
+    <!-- ② AI 할일 추천 — 이니셔티브 기반 칩 -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-03);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px">
+        ✨ AI 추천 — 지금 가장 급한 것
       </div>
-      <div class="scrum-row">
-        <span class="scrum-icon">⚠️</span>
-        <div>
-          <div class="scrum-label">블로커</div>
-          <div class="scrum-value" style="color:var(--text-03)">없음</div>
-        </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${AI_SUGGESTIONS.map(s => `
+          <button onclick="useRecommend('${esc(s.title)}')"
+            style="display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:var(--radius-full);
+                   border:1.5px solid ${s.premise_type==='initiative'?'var(--primary-border)':'var(--blue-bg)'};
+                   background:${s.premise_type==='initiative'?'var(--primary-bg)':'var(--blue-bg)'};
+                   color:var(--text-01);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;
+                   letter-spacing:-0.01em;min-height:36px;text-align:left">
+            <span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;
+              background:${s.premise_type==='initiative'?'var(--primary)':'var(--blue)'};color:white">
+              ${s.premise_type==='initiative'?'이니셔티브':'목표'}
+            </span>
+            ${esc(s.title)}
+          </button>`).join('')}
+        <div id="ai-recommend-box" class="ai-recommend-box"></div>
       </div>
     </div>
 
+    <!-- ③ Todo 입력 + 리스트 ↔ 오늘 현황 -->
     <div class="grid-2">
-      <div>
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">📝 오늘 스크럼 <span style="font-size:12px;color:var(--text-03);font-weight:400">${todayTodos.length}개 남음</span></div>
-            <button onclick="triggerAnalysis()" style="background:var(--purple-bg);color:var(--purple);border:none;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;min-height:32px">⚡ AI 분석</button>
+
+      <!-- Todo -->
+      <div class="card">
+        <div class="card-header">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div class="card-title">📝 오늘 할일
+              <span style="font-size:12px;color:var(--text-03);font-weight:400;margin-left:4px">${todoCount}개 남음</span>
+            </div>
+            <div style="font-size:11px;color:var(--text-03)">${doneCount}/${total} 완료 · ${donePct}%</div>
           </div>
-          <div class="card-body">
-            <div id="ai-recommend-box" class="ai-recommend-box"></div>
-            <div class="todo-input-area">
-              <div class="todo-input-row">
-                <input id="todo-input-main" class="todo-input" placeholder="할일 입력... (Enter로 추가)"
-                  onkeydown="if(event.key==='Enter')addTodo()"
-                  oninput="onTodoInput(this.value)" autocomplete="off" />
-                <button class="btn-add" onclick="addTodo()">추가</button>
-              </div>
-              <button onclick="showAiRecommend()" style="background:none;border:none;font-size:12px;color:var(--purple);cursor:pointer;display:flex;align-items:center;gap:4px;padding:4px 0;min-height:36px">
-                ✨ AI 추천 받기
-              </button>
+          <button onclick="triggerAnalysis()"
+            style="background:var(--purple-bg);color:var(--purple);border:none;border-radius:6px;
+                   padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;min-height:32px">
+            ⚡ AI 분석
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="todo-input-area">
+            <div class="todo-input-row">
+              <input id="todo-input-main" class="todo-input" placeholder="할일 입력... (Enter로 추가)"
+                onkeydown="if(event.key==='Enter')addTodo()"
+                oninput="onTodoInput(this.value)" autocomplete="off" />
+              <button class="btn-add" onclick="addTodo()">추가</button>
             </div>
-            <div class="todo-list" id="todo-list-active">
-              ${todayTodos.length ? todayTodos.map(todoHTML).join('') : `<div class="empty"><div class="emoji">✍️</div><p>오늘의 할일을 추가해보세요!</p></div>`}
-            </div>
-            ${doneTodos.length ? `
-            <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+          </div>
+          <div class="todo-list" id="todo-list-active">
+            ${todayTodos.length
+              ? todayTodos.map(todoHTML).join('')
+              : `<div class="empty"><div class="emoji">✍️</div><p>오늘의 할일을 추가해보세요!</p></div>`}
+          </div>
+          ${doneTodos.length ? `
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
               <div style="font-size:12px;font-weight:600;color:var(--text-03);margin-bottom:8px">✅ 완료 (${doneTodos.length})</div>
               <div class="todo-list">${doneTodos.map(todoHTML).join('')}</div>
             </div>` : ''}
-          </div>
         </div>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:14px">
-        <div class="card">
-          <div class="card-header"><div class="card-title">📈 오늘의 기여도</div></div>
-          <div class="card-body">${contributionStats()}</div>
-        </div>
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">🎯 현재 목표</div>
-            <button onclick="showPage('premises')" style="background:none;border:none;font-size:12px;color:var(--primary);cursor:pointer;min-height:32px">전체 보기</button>
+      <!-- 우측: 스크럼 상태 + 기여도 + 목표 -->
+      <div style="display:flex;flex-direction:column;gap:12px">
+
+        <!-- 비동기 스크럼 미니 배너 -->
+        <div class="async-scrum-banner" style="margin:0">
+          <div class="scrum-row">
+            <span class="scrum-icon">✅</span>
+            <div><div class="scrum-label">오늘 완료</div>
+              <div class="scrum-value">${doneCount}건</div></div>
           </div>
-          <div class="card-body" style="padding:12px">
-            ${premises.filter(p=>p.is_active).slice(0,3).map(p=>`
-              <div style="padding:10px;background:var(--bg-02);border-radius:8px;margin-bottom:6px">
-                <span class="premise-type-badge ${p.type==='initiative'?'premise-initiative':'premise-goal'}">${p.type==='initiative'?'이니셔티브':'목표'}</span>
-                <div style="font-size:13px;font-weight:600">${esc(p.title)}</div>
+          <div class="scrum-row">
+            <span class="scrum-icon">🎯</span>
+            <div><div class="scrum-label">남은 할일</div>
+              <div class="scrum-value">${todoCount}건</div></div>
+          </div>
+          <div class="scrum-row">
+            <span class="scrum-icon">🔥</span>
+            <div><div class="scrum-label">집중 작업</div>
+              <div class="scrum-value" style="font-size:11px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                ${focusTodo ? esc(focusTodo.title) : '없음'}
               </div>
-            `).join('') || '<div style="font-size:13px;color:var(--text-03)">설정된 목표가 없어요</div>'}
-            <div class="decompose-box">
-              <div class="decompose-title">🤖 소전제로 Todo 자동 생성</div>
-              <select id="premise-select" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px;margin-bottom:8px;min-height:44px;background:white">
-                <option value="">소전제 선택...</option>
-                ${premises.filter(p=>p.type==='goal'&&p.is_active).map(p=>`<option value="${p.id}">${esc(p.title)}</option>`).join('')}
-              </select>
-              <button onclick="decomposeFromPremise()" style="background:var(--purple);color:white;border:none;border-radius:6px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;width:100%;min-height:44px">
-                ⚡ Copilot으로 분해하기
-              </button>
             </div>
           </div>
         </div>
+
+        <!-- 기여도 -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">📈 오늘 기여도</div></div>
+          <div class="card-body">${contributionStats()}</div>
+        </div>
+
+        <!-- 현재 목표 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎯 이니셔티브</div>
+            <button onclick="showPage('premises')" style="background:none;border:none;font-size:12px;color:var(--primary);cursor:pointer;min-height:32px">전체 보기</button>
+          </div>
+          <div class="card-body" style="padding:12px">
+            ${premises.filter(p=>p.is_active&&p.type==='initiative').slice(0,2).map(p=>`
+              <div style="padding:9px 11px;background:var(--primary-bg);border:1px solid var(--primary-border);border-radius:8px;margin-bottom:6px">
+                <div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:2px">이니셔티브</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-01)">${esc(p.title)}</div>
+              </div>`).join('')}
+            ${premises.filter(p=>p.is_active&&p.type==='goal').slice(0,2).map(p=>`
+              <div style="padding:9px 11px;background:var(--blue-bg);border-radius:8px;margin-bottom:6px">
+                <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:2px">목표</div>
+                <div style="font-size:13px;font-weight:600;color:var(--text-01)">${esc(p.title)}</div>
+              </div>`).join('') || ''}
+            ${!premises.filter(p=>p.is_active).length ? '<div style="font-size:13px;color:var(--text-03)">설정된 목표가 없어요</div>' : ''}
+            <button onclick="decomposeFromPremise()"
+              style="width:100%;margin-top:8px;background:var(--purple);color:white;border:none;
+                     border-radius:6px;padding:8px 0;font-size:13px;font-weight:700;cursor:pointer;min-height:40px;font-family:inherit">
+              ⚡ Copilot으로 할일 분해
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   `;
@@ -1209,10 +1247,10 @@ async function triggerAnalysis() {
 }
 
 async function decomposeFromPremise() {
-  const sel = document.getElementById('premise-select');
-  if (!sel?.value) { showToast('소전제를 선택해주세요'); return; }
-  const premise = premises.find(p => p.id === parseInt(sel.value));
-  if (!premise) return;
+  const goalPremises = premises.filter(p => p.type === 'goal' && p.is_active);
+  if (!goalPremises.length) { showToast('활성 목표(소전제)가 없어요'); return; }
+  // 가장 관련도 높은 목표 자동 선택 (첫 번째)
+  const premise = goalPremises[0];
   showToast('🤖 Copilot이 분해 중...');
   setTimeout(() => {
     const generated = [
@@ -1221,10 +1259,11 @@ async function decomposeFromPremise() {
       `${premise.title} 진행상황 팀 공유`,
     ];
     generated.forEach(title => {
-      todos.unshift({ id: Date.now() + Math.random(), user_id: currentUser.id, title, status:'todo', todo_date: new Date().toISOString().slice(0,10), analysis: { relation:'goal', confidence:0.88 } });
+      todos.unshift({ id: Date.now() + Math.random(), user_id: currentUser.id, title, status:'todo',
+        todo_date: new Date().toISOString().slice(0,10), analysis: { relation:'goal', confidence:0.88 } });
     });
     renderHome();
-    showToast(`✨ ${generated.length}개 태스크가 생성됐어요!`);
+    showToast(`✨ ${generated.length}개 태스크 생성! (${premise.title})`);
   }, 1800);
 }
 
@@ -1341,23 +1380,7 @@ function renderTeam() {
       </div>
     </div>
 
-    <!-- ③ 전사 업무 연관 지도 -->
-    <div class="card" style="margin-bottom:16px;overflow:hidden;padding:0">
-      <div class="card-header" style="padding:12px 16px">
-        <div class="card-title">🧠 전사 업무 연관 지도</div>
-        <span style="font-size:12px;color:var(--text-03)">이니셔티브 진척도 · 크로스팀 연결</span>
-        <a href="/static/graph-b.html" target="_blank"
-          style="margin-left:auto;font-size:11px;color:var(--primary);text-decoration:none;padding:4px 10px;border:1px solid var(--primary-border);border-radius:6px;white-space:nowrap">
-          전체화면 ↗
-        </a>
-      </div>
-      <iframe src="/static/graph-b.html"
-        style="width:100%;height:480px;border:none;display:block" loading="lazy"
-        title="Hivemind 지식 네트워크">
-      </iframe>
-    </div>
-
-    <!-- ④ 기여 히트맵 -->
+    <!-- ③ 기여 히트맵 (그래프는 홈 대시보드에 있음) -->
     <div style="margin-bottom:12px">
       <div style="font-size:11px;font-weight:700;color:var(--text-03);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">📌 이니셔티브 / 목표 선택</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -1558,7 +1581,8 @@ function renderPremises() {
     </div>`;
 }
 
-function renderAudit() {
+function renderAudit(tab) {
+  const activeTab = tab || 'decisions';
   if (!auditDecisions) auditDecisions = DEMO_AI_DECISIONS.map(d => ({...d}));
 
   const stats = { pending:0, approved:0, flagged:0, overridden:0 };
@@ -1568,7 +1592,34 @@ function renderAudit() {
   const confColor = c => c>=0.9?'#1A9F46':c>=0.7?'#FF6114':'#FF4242';
   const statusLabel = { pending:'검토 필요', approved:'승인됨', flagged:'이의제기', overridden:'수정됨' };
 
+  // 메일 미리보기 데이터
+  if (!mailPreviewUser) mailPreviewUser = currentUser?.id || 1;
+  const mailUser  = DEMO_USERS.find(u => u.id === mailPreviewUser) || DEMO_USERS[0];
+  const userTodos = DEMO_TODOS[mailUser.id] || [];
+  const mailDone  = userTodos.filter(t => t.status==='done');
+  const mailTodo  = userTodos.filter(t => t.status==='todo');
+  const team      = DEMO_TEAMS.find(t => t.id === mailUser.team_id);
+  const dateStr   = new Date().toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'});
+
   document.getElementById('content-area').innerHTML = `
+    <!-- 탭 헤더 -->
+    <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)">
+      <button onclick="renderAudit('decisions')"
+        style="padding:10px 18px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+               color:${activeTab==='decisions'?'var(--primary)':'var(--text-03)'};
+               border-bottom:2px solid ${activeTab==='decisions'?'var(--primary)':'transparent'};margin-bottom:-2px">
+        🤖 AI 감사 <span style="font-size:11px;font-weight:600;background:var(--primary);color:white;border-radius:10px;padding:1px 6px;margin-left:4px">${stats.pending||0}</span>
+      </button>
+      <button onclick="renderAudit('mail')"
+        style="padding:10px 18px;border:none;background:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;
+               color:${activeTab==='mail'?'var(--primary)':'var(--text-03)'};
+               border-bottom:2px solid ${activeTab==='mail'?'var(--primary)':'transparent'};margin-bottom:-2px">
+        📧 메일 미리보기
+      </button>
+    </div>
+
+    ${activeTab === 'decisions' ? `
+    <!-- AI 감사 탭 -->
     <div class="audit-stats">
       <div class="audit-stat-card"><div class="audit-stat-num">${auditDecisions.length}</div><div class="audit-stat-lbl">전체</div></div>
       <div class="audit-stat-card"><div class="audit-stat-num" style="color:var(--primary)">${stats.pending||0}</div><div class="audit-stat-lbl">검토 필요</div></div>
@@ -1601,8 +1652,67 @@ function renderAudit() {
             <button class="btn-cancel btn-sm" onclick="toggleOverrideForm(${d.id})">취소</button>
           </div>
         </div>
+      </div>`).join('')}
+
+    ` : `
+    <!-- 메일 미리보기 탭 -->
+    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:0 0 180px">
+        <div class="card" style="padding:12px 0">
+          <div style="padding:0 12px 8px;font-size:11px;font-weight:700;color:var(--text-03);text-transform:uppercase;letter-spacing:.5px">팀원 선택</div>
+          ${DEMO_USERS.map(u => {
+            const t = DEMO_TEAMS.find(x => x.id === u.team_id);
+            return `<button onclick="setMailUser(${u.id})" style="width:100%;display:flex;align-items:center;gap:8px;padding:7px 12px;border:none;background:${u.id===mailPreviewUser?'var(--primary-bg)':'transparent'};cursor:pointer;font-family:inherit;text-align:left;border-left:3px solid ${u.id===mailPreviewUser?'var(--primary)':'transparent'}">
+              <span style="font-size:16px">${u.emoji}</span>
+              <div>
+                <div style="font-size:12px;font-weight:${u.id===mailPreviewUser?700:500};color:${u.id===mailPreviewUser?'var(--primary)':'var(--text-01)'}">${u.name}</div>
+                <div style="font-size:10px;color:var(--text-03)">${t?.name||''}</div>
+              </div>
+            </button>`;
+          }).join('')}
+        </div>
       </div>
-    `).join('')}
+      <div style="flex:1;min-width:280px">
+        <div class="card">
+          <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg-02)">
+            <div style="font-size:11px;color:var(--text-03)">From: Hivemind AI &lt;noreply@hivemind.ai&gt;</div>
+            <div style="font-size:11px;color:var(--text-03)">To: ${mailUser.name} &lt;${mailUser.username}@company.com&gt;</div>
+            <div style="font-size:14px;font-weight:700;margin-top:6px">[Hivemind] ${mailUser.name}님의 오늘 업무 AI 분석 리포트</div>
+          </div>
+          <div style="padding:20px;max-width:560px">
+            <div style="background:linear-gradient(135deg,#151515,#F85100);color:white;border-radius:12px;padding:18px 22px;margin-bottom:16px">
+              <div style="font-size:10px;opacity:.7;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Hivemind Daily Report</div>
+              <div style="font-size:18px;font-weight:700">${mailUser.emoji} ${mailUser.name}님, 수고하셨어요!</div>
+              <div style="font-size:12px;opacity:.8;margin-top:4px">${dateStr} · ${team?.name||''}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">
+              <div style="text-align:center;padding:12px;border:1px solid var(--border);border-radius:10px">
+                <div style="font-size:22px;font-weight:700;color:var(--primary)">${userTodos.length}</div>
+                <div style="font-size:11px;color:var(--text-03)">전체</div>
+              </div>
+              <div style="text-align:center;padding:12px;border:1px solid var(--border);border-radius:10px">
+                <div style="font-size:22px;font-weight:700;color:#1A9F46">${mailDone.length}</div>
+                <div style="font-size:11px;color:var(--text-03)">완료</div>
+              </div>
+              <div style="text-align:center;padding:12px;border:1px solid var(--border);border-radius:10px">
+                <div style="font-size:22px;font-weight:700;color:var(--medium)">${mailTodo.length}</div>
+                <div style="font-size:11px;color:var(--text-03)">진행 중</div>
+              </div>
+            </div>
+            ${userTodos.slice(0,4).map(t=>`
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+                <span style="font-size:14px">${t.status==='done'?'✅':'⬜'}</span>
+                <span style="font-size:13px;flex:1;color:${t.status==='done'?'var(--text-03)':'var(--text-01)'};${t.status==='done'?'text-decoration:line-through':''}">${esc(t.title)}</span>
+                ${t.analysis?.confidence ? `<span style="font-size:11px;font-weight:700;color:${confColor(t.analysis.confidence)}">${Math.round(t.analysis.confidence*100)}%</span>` : ''}
+              </div>`).join('')}
+            <div style="margin-top:14px;padding:12px;background:var(--bg-02);border-radius:8px;font-size:12px;color:var(--text-02);line-height:1.7">
+              Hivemind · AI 팀 생산성 플랫폼 · 수신 거부는 설정에서
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    `}
   `;
   debugPanelRender();
 }
@@ -1635,98 +1745,9 @@ function submitOverride(id) {
   }
 }
 
-function renderMail() {
-  if (!mailPreviewUser) mailPreviewUser = currentUser?.id || 1;
-
-  const user = DEMO_USERS.find(u => u.id === mailPreviewUser) || DEMO_USERS[0];
-  const userTodos = DEMO_TODOS[user.id] || [];
-  const done = userTodos.filter(t => t.status==='done');
-  const todo = userTodos.filter(t => t.status==='todo');
-  const aiTasks = userTodos.filter(t => t.analysis && t.analysis.confidence >= 0.8);
-  const team = DEMO_TEAMS.find(t => t.id === user.team_id);
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'});
-
-  document.getElementById('content-area').innerHTML = `
-    <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-      <div style="flex:0 0 200px">
-        <div class="card" style="padding:14px 0">
-          <div style="padding:0 14px 10px;font-size:12px;font-weight:700;color:var(--text-03);text-transform:uppercase;letter-spacing:.5px">팀원 선택</div>
-          ${DEMO_USERS.map(u => {
-            const t = DEMO_TEAMS.find(x => x.id === u.team_id);
-            return `<button onclick="setMailUser(${u.id})" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 14px;border:none;background:${u.id===mailPreviewUser?'var(--primary-bg)':'transparent'};cursor:pointer;font-family:inherit;text-align:left;border-left:3px solid ${u.id===mailPreviewUser?'var(--primary)':'transparent'}">
-              <span style="font-size:18px">${u.emoji}</span>
-              <div>
-                <div style="font-size:12px;font-weight:${u.id===mailPreviewUser?700:500};color:${u.id===mailPreviewUser?'var(--primary)':'var(--text-01)'}">${u.name}</div>
-                <div style="font-size:10px;color:var(--text-03)">${t?.name||''}</div>
-              </div>
-            </button>`;
-          }).join('')}
-        </div>
-      </div>
-
-      <div style="flex:1;min-width:320px">
-        <div class="card">
-          <div style="padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg-02);border-radius:var(--radius) var(--radius) 0 0">
-            <div style="font-size:11px;color:var(--text-03);margin-bottom:3px">From: Hivemind AI &lt;noreply@hivemind.ai&gt;</div>
-            <div style="font-size:11px;color:var(--text-03);margin-bottom:3px">To: ${user.name} &lt;${user.username}@company.com&gt;</div>
-            <div style="font-size:11px;color:var(--text-03);margin-bottom:3px">Date: ${dateStr}</div>
-            <div style="font-size:14px;font-weight:700;margin-top:6px;letter-spacing:-0.02em">[Hivemind] ${user.name}님의 오늘 업무 AI 분석 리포트</div>
-          </div>
-          <div style="padding:24px;max-width:600px">
-            <div style="background:linear-gradient(135deg,#151515,#F85100);color:white;border-radius:12px;padding:20px 24px;margin-bottom:20px">
-              <div style="font-size:11px;opacity:.7;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Hivemind Daily Report</div>
-              <div style="font-size:20px;font-weight:700;letter-spacing:-0.03em">${user.emoji} ${user.name}님, 오늘도 수고하셨어요!</div>
-              <div style="font-size:13px;opacity:.85;margin-top:6px">${dateStr} · ${team?.name||''}</div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px">
-              <div style="text-align:center;padding:14px;border:1px solid var(--border);border-radius:12px">
-                <div style="font-size:24px;font-weight:700;color:var(--primary)">${userTodos.length}</div>
-                <div style="font-size:11px;color:var(--text-03)">전체 할일</div>
-              </div>
-              <div style="text-align:center;padding:14px;border:1px solid var(--border);border-radius:12px">
-                <div style="font-size:24px;font-weight:700;color:#1A9F46">${done.length}</div>
-                <div style="font-size:11px;color:var(--text-03)">완료</div>
-              </div>
-              <div style="text-align:center;padding:14px;border:1px solid var(--border);border-radius:12px">
-                <div style="font-size:24px;font-weight:700;color:var(--medium)">${todo.length}</div>
-                <div style="font-size:11px;color:var(--text-03)">진행 중</div>
-              </div>
-            </div>
-
-            <div style="font-size:13px;font-weight:700;margin-bottom:10px;color:var(--text-01)">📋 오늘의 업무 목록</div>
-            ${userTodos.map(t => `
-              <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;background:${t.status==='done'?'#F9FFF9':'white'}">
-                <span style="font-size:16px">${t.status==='done'?'✅':'⏳'}</span>
-                <span style="flex:1;font-size:13px;${t.status==='done'?'text-decoration:line-through;color:var(--text-03)':''}">${esc(t.title)}</span>
-                ${t.analysis?.confidence ? `<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:${t.analysis.confidence>=0.9?'#E8F9F0':t.analysis.confidence>=0.7?'var(--primary-bg)':'var(--bg-03)'};color:${t.analysis.confidence>=0.9?'#1A9F46':t.analysis.confidence>=0.7?'var(--primary)':'var(--text-03)'}">AI ${Math.round(t.analysis.confidence*100)}%</span>` : ''}
-              </div>
-            `).join('')}
-
-            ${aiTasks.length ? `
-            <div style="margin-top:18px;background:var(--primary-bg);border:1px solid var(--primary-border);border-radius:12px;padding:14px 16px">
-              <div style="font-size:12px;font-weight:700;color:var(--primary);margin-bottom:8px">✨ AI가 분석한 목표 기여도</div>
-              ${aiTasks.map(t => `<div style="font-size:12px;color:var(--text-02);margin-bottom:4px">• ${esc(t.title)} → <strong>${t.analysis.relation === 'initiative' ? '이니셔티브' : '목표'}</strong> 기여 (${Math.round(t.analysis.confidence*100)}%)</div>`).join('')}
-            </div>` : ''}
-
-            <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);font-size:11px;color:var(--text-03);text-align:center">
-              Hivemind · AI 팀 생산성 플랫폼 · 수신 거부는 설정에서
-            </div>
-          </div>
-        </div>
-        <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
-          <button class="btn-cancel btn-sm" onclick="showToast('📤 테스트 발송 기능은 준비 중이에요')">테스트 발송</button>
-          <button class="btn-confirm btn-sm" onclick="showToast('✅ 메일이 발송됐어요!')">발송</button>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
 function setMailUser(userId) {
   mailPreviewUser = userId;
-  renderMail();
+  renderAudit('mail');
 }
 
 function mapGoalToInitiative(goalId, initiativeId) {
