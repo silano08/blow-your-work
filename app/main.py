@@ -77,7 +77,7 @@ async def health() -> JSONResponse:
         "uptime_sec": uptime_sec,
         "uptime_human": _fmt_uptime(uptime_sec),
         "db": {"ok": db_ok, "tables": db_tables},
-        "url": "http://byw-teamflow.eastasia.azurecontainer.io",
+        "url": os.getenv("FRONTEND_URL", "https://byw-app.wittyrock-6a71193a.eastasia.azurecontainerapps.io"),
     }
     code = 200 if db_ok else 503
     return JSONResponse(content=payload, status_code=code)

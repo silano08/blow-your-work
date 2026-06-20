@@ -49,7 +49,7 @@ async def get_current_user(
 
 CALLBACK_URL = os.getenv(
     "GITHUB_CALLBACK_URL",
-    "http://byw-teamflow.eastasia.azurecontainer.io/auth/github/callback"
+    "https://byw-app.wittyrock-6a71193a.eastasia.azurecontainerapps.io/auth/github/callback"
 )
 
 @router.get("/github")
