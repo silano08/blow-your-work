@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#F85100" />
@@ -616,17 +616,17 @@
     <!-- Sidebar / Drawer -->
     <nav class="sidebar" id="sidebar">
       <div class="sidebar-logo"><span>🌊</span> TaskWave</div>
-      <button class="nav-item active" onclick="showPage('home',this)"><span class="nav-icon">🏠</span> 대시보드</button>
-      <button class="nav-item" onclick="showPage('team',this)"><span class="nav-icon">👥</span> 팀 현황</button>
-      <button class="nav-item nav-item-premises" onclick="showPage('premises',this)"><span class="nav-icon">🎯</span> 목표 관리</button>
-      <button class="nav-item" onclick="showPage('audit',this)"><span class="nav-icon">🤖</span> AI 감사</button>
+      <button class="nav-item active" aria-label="대시보드" onclick="showPage('home',this)"><span class="nav-icon">🏠</span> 대시보드</button>
+      <button class="nav-item" aria-label="팀 현황" onclick="showPage('team',this)"><span class="nav-icon">👥</span> 팀 현황</button>
+      <button class="nav-item nav-item-premises" aria-label="목표 관리" onclick="showPage('premises',this)"><span class="nav-icon">🎯</span> 목표 관리</button>
+      <button class="nav-item" aria-label="AI 감사" onclick="showPage('audit',this)"><span class="nav-icon">🤖</span> AI 감사</button>
       <div class="sidebar-user">
         <div class="user-avatar" id="sidebar-avatar">😊</div>
         <div class="user-info">
           <div class="user-name" id="sidebar-username">사용자</div>
           <div class="user-role" id="sidebar-role">member</div>
         </div>
-        <button class="btn-logout" onclick="logout()" title="로그아웃" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-03);padding:6px 8px;border-radius:6px;transition:background .15s" onmouseover="this.style.background='var(--bg-02)'" onmouseout="this.style.background='none'">
+        <button class="btn-logout" onclick="logout()" title="로그아웃" aria-label="로그아웃" style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-03);padding:6px 8px;border-radius:6px;transition:background .15s" onmouseover="this.style.background='var(--bg-02)'" onmouseout="this.style.background='none'">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           로그아웃
         </button>
@@ -1117,7 +1117,7 @@ function renderHome() {
             </div>
             <div style="font-size:11px;color:var(--text-03)">${doneCount}/${total} 완료 · ${donePct}%</div>
           </div>
-          <button id="btn-trigger-analysis" onclick="triggerAnalysis()"
+          <button id="btn-trigger-analysis" onclick="triggerAnalysis()" aria-label="AI 자동 분석 실행"
             style="background:var(--purple-bg);color:var(--purple);border:none;border-radius:6px;
                    padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;min-height:32px">
             ⚡ AI 분석

@@ -72,6 +72,7 @@ async def _run_analysis(db: aiosqlite.Connection, todo_ids: list[int] | None = N
     # 결과 저장
     for r in results:
         relation = _normalize_relation(r.get("relation"))
+        todo_title = next((t["title"] for t in todos if t["id"] == r["todo_id"]), "")
         # 기존 분석 삭제 후 재삽입 (최신 분석으로 갱신)
         await db.execute("DELETE FROM todo_analysis WHERE todo_id=?", (r["todo_id"],))
         await db.execute(
@@ -79,6 +80,21 @@ async def _run_analysis(db: aiosqlite.Connection, todo_ids: list[int] | None = N
                (todo_id, premise_id, relation, confidence, reason)
                VALUES (?,?,?,?,?)""",
             (r["todo_id"], r.get("premise_id"), relation, r["confidence"], r["reason"]),
+        )
+        # HITL 감사 큐에 pending 상태로 기록
+        await db.execute(
+            """INSERT INTO ai_decisions
+               (decision_type, input_summary, ai_output, reasoning, confidence, ref_todo_id, ref_premise_id, status)
+               VALUES (?,?,?,?,?,?,?,'pending')""",
+            (
+                "todo_match",
+                todo_title[:200],
+                relation,
+                r.get("reason", "")[:500],
+                r.get("confidence", 0.0),
+                r["todo_id"],
+                r.get("premise_id"),
+            ),
         )
 
     await db.commit()
@@ -136,6 +152,21 @@ async def _stream_analysis(current_user: dict, db: aiosqlite.Connection) -> Stre
                         relation,
                         result.get("confidence", 0.0),
                         result.get("reason", ""),
+                    ),
+                )
+                # HITL 감사 큐에 pending 상태로 기록
+                await db.execute(
+                    """INSERT INTO ai_decisions
+                       (decision_type, input_summary, ai_output, reasoning, confidence, ref_todo_id, ref_premise_id, status)
+                       VALUES (?,?,?,?,?,?,?,'pending')""",
+                    (
+                        "todo_match",
+                        todo["title"][:200],
+                        relation,
+                        result.get("reason", "")[:500],
+                        result.get("confidence", 0.0),
+                        todo["id"],
+                        result.get("premise_id"),
                     ),
                 )
                 await db.commit()

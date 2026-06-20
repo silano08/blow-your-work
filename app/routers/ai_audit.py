@@ -162,6 +162,7 @@ async def update_hitl_settings(
 async def mail_preview(
     user_id: int,
     db: aiosqlite.Connection = Depends(get_db),
+    _: dict = Depends(get_current_user),
 ):
     """Return structured data for the team-member email preview."""
     user = await (
