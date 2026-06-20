@@ -14,7 +14,7 @@ jobs:
       ACA_ENV: byw-env
       RG: byw-test-rg
       LOCATION: eastasia
-      IMAGE: bywtestacr0620.azurecr.io/byw-app:latest
+      IMAGE: bywtestacr0620.azurecr.io/byw-app:${{ github.sha }}
 
     steps:
       - name: Checkout
