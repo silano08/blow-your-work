@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>후보 A — 포스 그래프 (D3)</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0d1117; color: #e6edf3; font-family: -apple-system, sans-serif; overflow: hidden; height: 100vh; }
+  #header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 14px 24px; display: flex; align-items: center; gap: 16px; background: rgba(13,17,23,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #21262d; }
+  #header h1 { font-size: 15px; font-weight: 700; color: #f0883e; }
+  .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+  .b-me { background: rgba(248,81,0,0.2); color: #f85100; border: 1px solid rgba(248,81,0,0.3); }
+  .b-team { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25); }
+  .b-other { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.25); }
+  .b-premise { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+  #tooltip {
+    position: fixed; pointer-events: none; z-index: 999;
+    background: #161b22; border: 1px solid #30363d; border-radius: 10px;
+    padding: 12px 16px; font-size: 13px; max-width: 260px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5); display: none;
+    transition: opacity 0.15s;
+  }
+  #tooltip .t-title { font-weight: 700; margin-bottom: 4px; font-size: 14px; }
+  #tooltip .t-meta { color: #8b949e; font-size: 12px; }
+  #sidebar {
+    position: fixed; right: 0; top: 52px; bottom: 0; width: 280px; z-index: 80;
+    background: rgba(22,27,34,0.95); border-left: 1px solid #21262d; padding: 16px;
+    overflow-y: auto; backdrop-filter: blur(12px);
+    transform: translateX(100%); transition: transform 0.25s ease;
+  }
+  #sidebar.open { transform: translateX(0); }
+  #sidebar h3 { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: #f0883e; }
+  .rel-item { padding: 8px 10px; margin: 4px 0; border-radius: 7px; background: #21262d; font-size: 12px; cursor: pointer; border: 1px solid transparent; }
+  .rel-item:hover { border-color: #30363d; }
+  .rel-item .rel-name { font-weight: 600; margin-bottom: 2px; }
+  .rel-item .rel-desc { color: #8b949e; font-size: 11px; }
+  svg { display: block; }
+  .link { stroke: #30363d; stroke-opacity: 0.6; fill: none; }
+  .link.highlighted { stroke: #f85100; stroke-opacity: 0.9; }
+  .node circle { cursor: pointer; transition: r 0.2s; }
+  .node text { pointer-events: none; fill: #e6edf3; font-size: 11px; font-weight: 500; }
+  .node.dimmed circle { opacity: 0.15; }
+  .node.dimmed text { opacity: 0.1; }
+  .legend { position: fixed; bottom: 24px; left: 24px; display: flex; flex-direction: column; gap: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8b949e; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  #controls { position: fixed; bottom: 24px; right: 20px; display: flex; gap: 8px; }
+  .ctrl-btn { background: #21262d; border: 1px solid #30363d; color: #e6edf3; border-radius: 8px; padding: 8px 14px; font-size: 12px; cursor: pointer; }
+  .ctrl-btn:hover { background: #30363d; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>💥 TeamFlow — 팀 지식 그래프</h1>
+  <span class="badge b-me">● 나</span>
+  <span class="badge b-team">● 팀원</span>
+  <span class="badge b-other">● 다른팀</span>
+  <span class="badge b-premise">● 전제</span>
+  <span style="margin-left:auto;font-size:12px;color:#8b949e">노드 클릭 → 연관 업무 강조</span>
+</div>
+
+<div id="tooltip">
+  <div class="t-title" id="t-title"></div>
+  <div class="t-meta" id="t-meta"></div>
+</div>
+
+<div id="sidebar">
+  <h3 id="sb-title">연관 업무</h3>
+  <div id="sb-list"></div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#f85100"></div> 내 할일</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div> 팀원 할일</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div> 다른 팀</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div> 대전제/소전제</div>
+</div>
+
+<div id="controls">
+  <button class="ctrl-btn" onclick="resetView()">↺ 초기화</button>
+  <button class="ctrl-btn" onclick="toggleSidebar()">≡ 패널</button>
+</div>
+
+<script>
+const W = window.innerWidth, H = window.innerHeight;
+
+// ── 데이터 ──────────────────────────────────────────────────────────────
+const nodes = [
+  // 나 (팀 1)
+  { id:'t1', label:'DML 자동화 스크립트', group:'me', team:1, detail:'수동 DB 작업 자동화', size:20 },
+  { id:'t2', label:'Slack 봇 템플릿', group:'me', team:1, detail:'매일 답장 자동화', size:18 },
+  { id:'t3', label:'기여도 문서 업데이트', group:'me', team:1, detail:'이번 주 현황 정리', size:16 },
+  // 팀원 (팀 1)
+  { id:'t4', label:'결제 오류 알림 구현', group:'team', team:1, person:'이수아', size:18 },
+  { id:'t5', label:'정산 쿼리 자동화', group:'team', team:1, person:'이수아', size:16 },
+  { id:'t6', label:'GitHub Actions 배포', group:'team', team:1, person:'박민준', size:20 },
+  { id:'t7', label:'Docker 빌드 최적화', group:'team', team:1, person:'박민준', size:15 },
+  { id:'t8', label:'UX 인터뷰 2건', group:'team', team:1, person:'최서연', size:17 },
+  { id:'t9', label:'인터뷰 인사이트 문서', group:'team', team:1, person:'최서연', size:15 },
+  // 다른 팀 (팀 2)
+  { id:'t10', label:'AB 테스트 분석', group:'other', team:2, person:'정태양', size:14 },
+  { id:'t11', label:'마케팅 대시보드', group:'other', team:2, person:'정태양', size:14 },
+  // 전제
+  { id:'p1', label:'반복업무 자동화', group:'premise', type:'grand', size:28 },
+  { id:'p2', label:'커뮤니케이션 효율화', group:'premise', type:'grand', size:24 },
+  { id:'p3', label:'결제 안정성', group:'premise', type:'grand', size:26 },
+  { id:'p4', label:'UX 개선', group:'premise', type:'grand', size:22 },
+  { id:'p5', label:'DML 처리 자동화', group:'premise', type:'small', size:18 },
+  { id:'p6', label:'매일 답장 자동화', group:'premise', type:'small', size:16 },
+];
+
+const links = [
+  // 할일 → 전제
+  { source:'t1', target:'p5', strength:0.9 },
+  { source:'t2', target:'p6', strength:0.9 },
+  { source:'t3', target:'p1', strength:0.7 },
+  { source:'t4', target:'p3', strength:0.9 },
+  { source:'t5', target:'p5', strength:0.8 },
+  { source:'t6', target:'p1', strength:0.9 },
+  { source:'t7', target:'p1', strength:0.7 },
+  { source:'t8', target:'p4', strength:0.9 },
+  { source:'t9', target:'p4', strength:0.8 },
+  { source:'t10', target:'p4', strength:0.5 },
+  // 소전제 → 대전제
+  { source:'p5', target:'p1', strength:1.0 },
+  { source:'p6', target:'p2', strength:1.0 },
+  // 팀 간 연관
+  { source:'t1', target:'t5', strength:0.6 },  // DML 자동화 - 정산쿼리 연관
+  { source:'t6', target:'t7', strength:0.8 },  // 배포 파이프라인 - Docker
+  { source:'t8', target:'t9', strength:0.9 },  // 인터뷰 - 문서
+  { source:'t3', target:'t10', strength:0.4 }, // 기여도 문서 - AB테스트 (간접)
+];
+
+const colorMap = { me:'#f85100', team:'#60a5fa', other:'#a78bfa', premise:'#34d399' };
+
+// ── D3 ─────────────────────────────────────────────────────────────────
+const svg = d3.select('body').append('svg').attr('width', W).attr('height', H);
+
+const g = svg.append('g');
+
+svg.call(d3.zoom().scaleExtent([0.3, 3]).on('zoom', e => g.attr('transform', e.transform)));
+
+// glow filter
+const defs = svg.append('defs');
+const filter = defs.append('filter').attr('id', 'glow');
+filter.append('feGaussianBlur').attr('stdDeviation', '3').attr('result', 'coloredBlur');
+const feMerge = filter.append('feMerge');
+feMerge.append('feMergeNode').attr('in', 'coloredBlur');
+feMerge.append('feMergeNode').attr('in', 'SourceGraphic');
+
+const simulation = d3.forceSimulation(nodes)
+  .force('link', d3.forceLink(links).id(d => d.id).distance(d => {
+    if (d.source.group === 'premise' || d.target.group === 'premise') return 120;
+    return 80;
+  }).strength(d => d.strength * 0.3))
+  .force('charge', d3.forceManyBody().strength(-400))
+  .force('center', d3.forceCenter(W/2, H/2))
+  .force('collision', d3.forceCollide(d => d.size + 10));
+
+const link = g.append('g').selectAll('line')
+  .data(links).join('line')
+  .attr('class', 'link')
+  .attr('stroke-width', d => Math.max(1, d.strength * 2.5));
+
+const node = g.append('g').selectAll('g.node')
+  .data(nodes).join('g').attr('class', 'node')
+  .call(d3.drag()
+    .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+    .on('drag', (e, d) => { d.fx=e.x; d.fy=e.y; })
+    .on('end', (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx=null; d.fy=null; }));
+
+node.append('circle')
+  .attr('r', d => d.size)
+  .attr('fill', d => colorMap[d.group])
+  .attr('fill-opacity', 0.85)
+  .attr('filter', 'url(#glow)')
+  .attr('stroke', d => colorMap[d.group])
+  .attr('stroke-width', 1.5)
+  .attr('stroke-opacity', 0.5);
+
+node.append('text')
+  .text(d => d.label.length > 10 ? d.label.slice(0,10)+'…' : d.label)
+  .attr('text-anchor', 'middle')
+  .attr('dy', d => d.size + 13)
+  .attr('font-size', d => d.group==='premise' ? 12 : 10);
+
+// 호버/클릭
+const tooltip = document.getElementById('tooltip');
+let selectedNode = null;
+
+node.on('mouseover', (e, d) => {
+  tooltip.style.display = 'block';
+  tooltip.style.left = (e.clientX + 14) + 'px';
+  tooltip.style.top = (e.clientY - 10) + 'px';
+  document.getElementById('t-title').textContent = d.label;
+  document.getElementById('t-meta').textContent =
+    d.group === 'premise' ? `${d.type === 'grand' ? '🎯 대전제' : '📌 소전제'}` :
+    d.group === 'me' ? `👤 나 · ${d.detail || ''}` :
+    d.group === 'team' ? `👥 팀원 ${d.person}` : `🔗 타팀 ${d.person}`;
+})
+.on('mousemove', e => {
+  tooltip.style.left = (e.clientX + 14) + 'px';
+  tooltip.style.top = (e.clientY - 10) + 'px';
+})
+.on('mouseout', () => tooltip.style.display = 'none')
+.on('click', (e, d) => {
+  e.stopPropagation();
+  highlightNode(d);
+});
+
+svg.on('click', clearHighlight);
+
+function getConnected(d) {
+  const connected = new Set([d.id]);
+  links.forEach(l => {
+    if (l.source.id === d.id) connected.add(l.target.id);
+    if (l.target.id === d.id) connected.add(l.source.id);
+  });
+  return connected;
+}
+
+function highlightNode(d) {
+  selectedNode = d;
+  const connected = getConnected(d);
+
+  node.classed('dimmed', n => !connected.has(n.id));
+  link.classed('highlighted', l => l.source.id === d.id || l.target.id === d.id)
+      .attr('stroke', l => (l.source.id === d.id || l.target.id === d.id) ? '#f85100' : '#30363d')
+      .attr('stroke-opacity', l => (l.source.id === d.id || l.target.id === d.id) ? 1 : 0.15);
+
+  // 사이드바
+  const relNodes = nodes.filter(n => connected.has(n.id) && n.id !== d.id);
+  const sb = document.getElementById('sb-list');
+  document.getElementById('sb-title').textContent = `"${d.label}" 연관 (${relNodes.length})`;
+  sb.innerHTML = relNodes.map(n => `
+    <div class="rel-item" onclick="highlightNodeById('${n.id}')">
+      <div class="rel-name" style="color:${colorMap[n.group]}">${n.label}</div>
+      <div class="rel-desc">${n.group==='premise'?(n.type==='grand'?'🎯 대전제':'📌 소전제'):n.person?`👤 ${n.person}`:'👤 나'}</div>
+    </div>
+  `).join('');
+  document.getElementById('sidebar').classList.add('open');
+}
+
+function highlightNodeById(id) {
+  const n = nodes.find(x => x.id === id);
+  if (n) highlightNode(n);
+}
+
+function clearHighlight() {
+  selectedNode = null;
+  node.classed('dimmed', false);
+  link.classed('highlighted', false)
+      .attr('stroke', '#30363d').attr('stroke-opacity', 0.6);
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function resetView() {
+  clearHighlight();
+  svg.transition().duration(500).call(
+    d3.zoom().transform, d3.zoomIdentity.translate(0,0).scale(1)
+  );
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+simulation.on('tick', () => {
+  link.attr('x1', d=>d.source.x).attr('y1', d=>d.source.y)
+      .attr('x2', d=>d.target.x).attr('y2', d=>d.target.y);
+  node.attr('transform', d => `translate(${d.x},${d.y})`);
+});
+
+window.addEventListener('resize', () => location.reload());
+</script>
+</body>
+</html>

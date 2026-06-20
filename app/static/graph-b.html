@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>후보 B — 3D 네트워크 (Three.js)</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#050810; overflow:hidden; height:100vh; font-family:-apple-system,sans-serif; color:#fff; }
+  #canvas-container { position:fixed; inset:0; }
+  #ui { position:fixed; top:0; left:0; right:0; z-index:10; }
+  #header { display:flex; align-items:center; gap:12px; padding:14px 22px; background:rgba(5,8,16,0.8); backdrop-filter:blur(16px); border-bottom:1px solid rgba(255,255,255,0.06); }
+  #header h1 { font-size:14px; font-weight:700; color:#f8914e; }
+  .dot { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .legend { display:flex; gap:14px; margin-left:auto; }
+  .leg { display:flex; align-items:center; gap:5px; font-size:11px; color:rgba(255,255,255,0.5); }
+  #info-panel {
+    position:fixed; right:20px; top:70px; width:270px;
+    background:rgba(10,14,26,0.92); backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.08); border-radius:14px;
+    padding:18px; display:none; z-index:20;
+  }
+  #info-panel h3 { font-size:14px; font-weight:700; margin-bottom:4px; }
+  #info-panel .ip-type { font-size:11px; opacity:0.5; margin-bottom:14px; }
+  #info-panel .ip-section { font-size:11px; font-weight:700; opacity:0.4; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:6px; }
+  .ip-node { display:flex; align-items:center; gap:8px; padding:6px 8px; background:rgba(255,255,255,0.04); border-radius:7px; margin-bottom:4px; cursor:pointer; font-size:12px; }
+  .ip-node:hover { background:rgba(255,255,255,0.08); }
+  .ip-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  #hint { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); font-size:12px; color:rgba(255,255,255,0.3); background:rgba(5,8,16,0.7); padding:6px 16px; border-radius:100px; }
+  #close-info { position:absolute; top:12px; right:14px; background:none; border:none; color:rgba(255,255,255,0.4); font-size:18px; cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="canvas-container"></div>
+<div id="ui">
+  <div id="header">
+    <h1>💥 TeamFlow — 3D 지식 네트워크</h1>
+    <div class="legend">
+      <div class="leg"><span class="dot" style="background:#ff5500"></span>나</div>
+      <div class="leg"><span class="dot" style="background:#4d9eff"></span>팀원</div>
+      <div class="leg"><span class="dot" style="background:#9b59ff"></span>다른팀</div>
+      <div class="leg"><span class="dot" style="background:#00e5a0"></span>전제</div>
+    </div>
+    <span style="font-size:11px;color:rgba(255,255,255,0.3);margin-left:16px">드래그·줌·클릭</span>
+  </div>
+</div>
+
+<div id="info-panel">
+  <button id="close-info" onclick="closeInfo()">×</button>
+  <h3 id="ip-title"></h3>
+  <div class="ip-type" id="ip-type"></div>
+  <div class="ip-section">연관 업무</div>
+  <div id="ip-list"></div>
+</div>
+
+<div id="hint">마우스 드래그로 회전 · 휠로 줌 · 노드 클릭으로 연관 탐색</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ── 데이터 ──────────────────────────────────────────────────────────────
+const NODES = [
+  { id:'t1', label:'DML 자동화 스크립트', group:'me', size:1.4, detail:'수동 DB 작업 자동화' },
+  { id:'t2', label:'Slack 봇 템플릿', group:'me', size:1.2, detail:'매일 답장 자동화' },
+  { id:'t3', label:'기여도 문서 업데이트', group:'me', size:1.1, detail:'이번 주 현황 정리' },
+  { id:'t4', label:'결제 오류 알림', group:'team', size:1.3, person:'이수아' },
+  { id:'t5', label:'정산 쿼리 자동화', group:'team', size:1.1, person:'이수아' },
+  { id:'t6', label:'GitHub Actions 배포', group:'team', size:1.5, person:'박민준' },
+  { id:'t7', label:'Docker 빌드 최적화', group:'team', size:1.1, person:'박민준' },
+  { id:'t8', label:'UX 인터뷰 2건', group:'team', size:1.2, person:'최서연' },
+  { id:'t9', label:'인터뷰 인사이트 문서', group:'team', size:1.0, person:'최서연' },
+  { id:'t10', label:'AB 테스트 분석', group:'other', size:1.0, person:'정태양' },
+  { id:'t11', label:'마케팅 대시보드', group:'other', size:1.0, person:'정태양' },
+  { id:'p1', label:'반복업무 자동화', group:'premise', size:2.2, ptype:'grand' },
+  { id:'p2', label:'커뮤니케이션 효율화', group:'premise', size:1.9, ptype:'grand' },
+  { id:'p3', label:'결제 안정성', group:'premise', size:2.0, ptype:'grand' },
+  { id:'p4', label:'UX 개선', group:'premise', size:1.8, ptype:'grand' },
+  { id:'p5', label:'DML 처리 자동화', group:'premise', size:1.5, ptype:'small' },
+  { id:'p6', label:'매일 답장 자동화', group:'premise', size:1.4, ptype:'small' },
+];
+
+const EDGES = [
+  ['t1','p5'],['t2','p6'],['t3','p1'],['t4','p3'],['t5','p5'],
+  ['t6','p1'],['t7','p1'],['t8','p4'],['t9','p4'],['t10','p4'],
+  ['p5','p1'],['p6','p2'],
+  ['t1','t5'],['t6','t7'],['t8','t9'],['t3','t10'],
+];
+
+const COLOR = { me:0xff5500, team:0x4d9eff, other:0x9b59ff, premise:0x00e5a0 };
+const COLOR_HEX = { me:'#ff5500', team:'#4d9eff', other:'#9b59ff', premise:'#00e5a0' };
+
+// ── Three.js 셋업 ────────────────────────────────────────────────────────
+const W = window.innerWidth, H = window.innerHeight;
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x050810);
+scene.fog = new THREE.FogExp2(0x050810, 0.012);
+
+const camera = new THREE.PerspectiveCamera(60, W/H, 0.1, 1000);
+camera.position.set(0, 0, 55);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(devicePixelRatio);
+renderer.setSize(W, H);
+document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+// 조명
+scene.add(new THREE.AmbientLight(0x1a1a2e, 3));
+const point1 = new THREE.PointLight(0xff5500, 2, 120);
+point1.position.set(30, 30, 30);
+scene.add(point1);
+const point2 = new THREE.PointLight(0x4d9eff, 1.5, 100);
+point2.position.set(-30, -20, 20);
+scene.add(point2);
+
+// 배경 별
+const starGeo = new THREE.BufferGeometry();
+const starPos = new Float32Array(3000);
+for (let i = 0; i < 3000; i++) starPos[i] = (Math.random()-0.5)*400;
+starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color:0xffffff, size:0.3, opacity:0.4, transparent:true })));
+
+// 노드 위치 초기화 (force layout 근사)
+const nodeMap = {};
+const phi = Math.PI*(3-Math.sqrt(5));
+NODES.forEach((n, i) => {
+  const y = 1 - (i/NODES.length)*2;
+  const r = Math.sqrt(1-y*y);
+  const theta = phi*i;
+  const spread = 28;
+  n.x = r*Math.cos(theta)*spread;
+  n.y = y*spread*0.8;
+  n.z = r*Math.sin(theta)*spread;
+  nodeMap[n.id] = n;
+});
+
+// 메시 생성
+const meshes = [];
+const labelSprites = [];
+NODES.forEach(n => {
+  const geo = new THREE.SphereGeometry(n.size, 32, 32);
+  const mat = new THREE.MeshPhongMaterial({
+    color: COLOR[n.group],
+    emissive: COLOR[n.group],
+    emissiveIntensity: 0.4,
+    transparent: true,
+    opacity: 0.9,
+    shininess: 80,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.set(n.x, n.y, n.z);
+  mesh.userData = n;
+  scene.add(mesh);
+  meshes.push(mesh);
+  n.mesh = mesh;
+
+  // glow ring (대전제/소전제)
+  if (n.group === 'premise') {
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(n.size+0.3, n.size+0.8, 32),
+      new THREE.MeshBasicMaterial({ color: COLOR[n.group], side: THREE.DoubleSide, transparent:true, opacity:0.3 })
+    );
+    mesh.add(ring);
+  }
+});
+
+// 엣지 (튜브)
+EDGES.forEach(([a, b]) => {
+  const na = nodeMap[a], nb = nodeMap[b];
+  if (!na || !nb) return;
+  const points = [];
+  for (let t = 0; t <= 20; t++) {
+    const p = t/20;
+    const mx = (na.x+nb.x)/2, my = (na.y+nb.y)/2 + 3, mz = (na.z+nb.z)/2;
+    points.push(new THREE.Vector3(
+      na.x*(1-p)**2 + mx*2*p*(1-p) + nb.x*p**2,
+      na.y*(1-p)**2 + my*2*p*(1-p) + nb.y*p**2,
+      na.z*(1-p)**2 + mz*2*p*(1-p) + nb.z*p**2
+    ));
+  }
+  const curve = new THREE.CatmullRomCurve3(points);
+  const tube = new THREE.Mesh(
+    new THREE.TubeGeometry(curve, 20, 0.06, 6, false),
+    new THREE.MeshBasicMaterial({ color:0x2a3a5a, transparent:true, opacity:0.5 })
+  );
+  tube.userData = { edgeA: a, edgeB: b };
+  scene.add(tube);
+});
+
+// ── 마우스 컨트롤 ──────────────────────────────────────────────────────
+let isDragging = false, lastX = 0, lastY = 0;
+let rotX = 0, rotY = 0;
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+renderer.domElement.addEventListener('mousedown', e => { isDragging=true; lastX=e.clientX; lastY=e.clientY; });
+renderer.domElement.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastX, dy = e.clientY - lastY;
+  rotY += dx * 0.005; rotX += dy * 0.005;
+  lastX = e.clientX; lastY = e.clientY;
+});
+renderer.domElement.addEventListener('mouseup', e => {
+  if (Math.abs(e.clientX-lastX)<3 && Math.abs(e.clientY-lastY)<3) handleClick(e);
+  isDragging = false;
+});
+renderer.domElement.addEventListener('wheel', e => {
+  camera.position.z += e.deltaY * 0.05;
+  camera.position.z = Math.max(10, Math.min(120, camera.position.z));
+});
+
+let selectedMesh = null;
+function handleClick(e) {
+  mouse.x = (e.clientX/W)*2-1;
+  mouse.y = -(e.clientY/H)*2+1;
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(meshes);
+  if (hits.length) showInfo(hits[0].object);
+  else closeInfo();
+}
+
+function showInfo(mesh) {
+  selectedMesh = mesh;
+  const n = mesh.userData;
+  document.getElementById('ip-title').textContent = n.label;
+  document.getElementById('ip-type').textContent =
+    n.group==='premise'?(n.ptype==='grand'?'🎯 대전제':'📌 소전제'):
+    n.group==='me'?`👤 나 · ${n.detail||''}`:
+    n.group==='team'?`👥 팀원 ${n.person}`:`🔗 타팀 ${n.person}`;
+  document.getElementById('ip-type').style.color = COLOR_HEX[n.group];
+
+  const connected = EDGES.filter(([a,b]) => a===n.id||b===n.id)
+    .map(([a,b]) => nodeMap[a===n.id?b:a]);
+  document.getElementById('ip-list').innerHTML = connected.map(c => `
+    <div class="ip-node" onclick="focusNode('${c.id}')">
+      <div class="ip-dot" style="background:${COLOR_HEX[c.group]}"></div>
+      <span>${c.label}</span>
+    </div>`).join('');
+
+  document.getElementById('info-panel').style.display = 'block';
+
+  // 하이라이트
+  const connIds = new Set([n.id, ...connected.map(c=>c.id)]);
+  meshes.forEach(m => {
+    const inSet = connIds.has(m.userData.id);
+    m.material.opacity = inSet ? 1 : 0.1;
+    m.material.emissiveIntensity = inSet ? 0.7 : 0.05;
+  });
+}
+
+function focusNode(id) {
+  const n = nodeMap[id];
+  if (n && n.mesh) showInfo(n.mesh);
+}
+
+function closeInfo() {
+  document.getElementById('info-panel').style.display = 'none';
+  meshes.forEach(m => { m.material.opacity=0.9; m.material.emissiveIntensity=0.4; });
+  selectedMesh = null;
+}
+
+// ── 애니메이션 ────────────────────────────────────────────────────────
+const group = new THREE.Group();
+meshes.forEach(m => group.add(m));
+// scene에서 제거하고 group에 추가는 복잡하므로 scene rotation 활용
+let autoRotate = true;
+scene.rotation.y = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (!isDragging && autoRotate) scene.rotation.y += 0.001;
+  scene.rotation.x = rotX * 0.3;
+  scene.rotation.y += isDragging ? 0 : 0.001;
+  if (isDragging) { scene.rotation.x += (rotX - scene.rotation.x) * 0.1; }
+  renderer.render(scene, camera);
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>

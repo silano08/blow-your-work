@@ -2,12 +2,14 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blow Your Work 💥</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#F85100" />
+  <title>TeamFlow 💥</title>
   <style>
     :root {
       --primary: #F85100;
-      --primary-hover: #D54000;
       --primary-light: #FF6114;
       --primary-bg: #FFEFE7;
       --primary-border: #FFCFBD;
@@ -24,705 +26,1487 @@
       --medium-bg: #FFEFE7;
       --low: #1A9F46;
       --low-bg: #F0FDF4;
-      --done-bg: #F6F6F9;
+      --blue: #3B82F6;
+      --blue-bg: #EFF6FF;
+      --purple: #8B5CF6;
+      --purple-bg: #F5F3FF;
       --radius: 12px;
       --radius-sm: 8px;
-      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --shadow: 0 2px 12px rgba(0,0,0,0.07);
       --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+      --sidebar: 240px;
+      --bottom-nav: 64px;
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html { height: 100%; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg-02);
-      color: var(--text-01);
-      min-height: 100vh;
+      background: var(--bg-02); color: var(--text-01);
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Header ── */
-    header {
-      background: var(--bg-01);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+    /* ── Login Screen ── */
+    #login-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; min-height: 100dvh;
+      background: linear-gradient(135deg, #151515 0%, #2d1810 50%, #F85100 100%);
+      padding: 20px;
     }
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-weight: 700;
-      font-size: 18px;
-      color: var(--primary);
-      text-decoration: none;
+    .login-card {
+      background: white; border-radius: 20px; padding: 40px 32px; text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 380px; width: 100%;
     }
-    .logo span { font-size: 22px; }
-    .task-count {
-      background: var(--primary-bg);
-      color: var(--primary);
-      font-size: 12px;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 20px;
+    .login-logo { font-size: 48px; margin-bottom: 16px; }
+    .login-title { font-size: 26px; font-weight: 800; color: var(--text-01); margin-bottom: 8px; }
+    .login-sub { font-size: 14px; color: var(--text-03); margin-bottom: 32px; line-height: 1.6; }
+    .btn-github {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 14px 24px; background: #24292e; color: white;
+      border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600;
+      cursor: pointer; text-decoration: none; transition: background 0.2s; min-height: 52px;
     }
+    .btn-github:hover { background: #1a1e22; }
+    .login-demo { margin-top: 16px; font-size: 12px; color: var(--text-03); }
+    .btn-demo {
+      background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 10px 20px; font-size: 13px; color: var(--text-02); cursor: pointer; margin-top: 8px;
+      min-height: 44px; min-width: 160px;
+    }
+    .btn-demo:hover { background: var(--bg-02); }
 
-    /* ── Main layout ── */
-    main {
-      max-width: 760px;
-      margin: 0 auto;
-      padding: 32px 20px 80px;
-    }
+    /* ── App Shell ── */
+    #app { display: none; flex: 1; }
+    .app-layout { display: flex; min-height: 100vh; min-height: 100dvh; }
 
-    /* ── Hero / Input section ── */
-    .hero {
+    /* ── Sidebar (desktop) ── */
+    .sidebar {
+      width: var(--sidebar); background: var(--bg-01); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh;
+      overflow-y: auto; z-index: 50; transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    }
+    .sidebar-logo { padding: 20px 16px 12px; display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 16px; color: var(--primary); border-bottom: 1px solid var(--border); }
+    .sidebar-logo span { font-size: 20px; }
+    .sidebar-section { padding: 12px 8px 4px; font-size: 10px; font-weight: 700; color: var(--text-03); letter-spacing: 0.8px; text-transform: uppercase; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin: 1px 4px;
+      border-radius: var(--radius-sm); font-size: 14px; color: var(--text-02);
+      cursor: pointer; transition: background 0.15s, color 0.15s; border: none; background: none;
+      width: calc(100% - 8px); text-align: left; min-height: 44px;
+    }
+    .nav-item:hover { background: var(--bg-02); color: var(--text-01); }
+    .nav-item.active { background: var(--primary-bg); color: var(--primary); font-weight: 600; }
+    .nav-item .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-user { margin-top: auto; padding: 12px 16px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-bg); display: flex; align-items: center; justify-content: center; font-size: 14px; overflow: hidden; flex-shrink: 0; }
+    .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .user-info { flex: 1; min-width: 0; }
+    .user-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .user-role { font-size: 11px; color: var(--text-03); }
+    .btn-logout { background: none; border: none; font-size: 14px; color: var(--text-03); cursor: pointer; padding: 6px; min-width: 32px; }
+
+    /* ── Mobile Header ── */
+    .mobile-header {
+      display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+      height: 56px; background: var(--bg-01); border-bottom: 1px solid var(--border);
+      align-items: center; padding: 0 16px; gap: 12px;
+    }
+    .mobile-header .logo-text { font-size: 16px; font-weight: 800; color: var(--primary); flex: 1; }
+    .btn-hamburger {
+      background: none; border: none; font-size: 22px; cursor: pointer; padding: 6px;
+      color: var(--text-01); min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center;
+    }
+    .mobile-page-title { font-size: 15px; font-weight: 600; color: var(--text-01); }
+
+    /* ── Drawer Overlay ── */
+    .drawer-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 90;
+      animation: fadeIn 0.2s;
+    }
+    .drawer-overlay.open { display: block; }
+    @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+
+    /* ── Bottom Navigation (mobile) ── */
+    .bottom-nav {
+      display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 60;
+      height: var(--bottom-nav); background: var(--bg-01); border-top: 1px solid var(--border);
+      padding: 0 4px; padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bottom-nav-inner {
+      display: flex; align-items: stretch; height: 100%; gap: 2px;
+    }
+    .bottom-nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 3px; border: none; background: none; cursor: pointer; padding: 6px 4px;
+      border-radius: var(--radius-sm); transition: background 0.15s; color: var(--text-03);
+      font-size: 10px; font-weight: 500; min-height: 48px;
+    }
+    .bottom-nav-item.active { color: var(--primary); }
+    .bottom-nav-item .bnav-icon { font-size: 20px; line-height: 1; }
+    .bottom-nav-more {
+      position: fixed; bottom: calc(var(--bottom-nav) + 8px); right: 12px;
+      background: var(--primary); color: white; border: none; border-radius: 50%;
+      width: 48px; height: 48px; font-size: 22px; cursor: pointer; z-index: 61;
+      box-shadow: var(--shadow-lg); display: none; align-items: center; justify-content: center;
+      transition: transform 0.2s;
+    }
+    .bottom-nav-more:active { transform: scale(0.92); }
+
+    /* ── Main content ── */
+    .main-content {
+      margin-left: var(--sidebar); flex: 1; display: flex; flex-direction: column; min-height: 100vh;
+    }
+    .page-header {
+      background: var(--bg-01); border-bottom: 1px solid var(--border);
+      padding: 16px 28px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 40;
+    }
+    .page-title { font-size: 18px; font-weight: 700; }
+    .page-date { font-size: 13px; color: var(--text-03); }
+    .content-area { padding: 20px 24px; flex: 1; }
+
+    /* ── Cards ── */
+    .card { background: var(--bg-01); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); }
+    .card-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+    .card-body { padding: 18px; }
+
+    /* ── Grid layouts ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .col-span-2 { grid-column: span 2; }
+
+    /* ── Todo input ── */
+    .todo-input-area { margin-bottom: 18px; }
+    .todo-input-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .todo-input {
+      flex: 1; border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 11px 14px;
+      font-size: 14px; font-family: inherit; transition: border-color 0.2s; background: var(--bg-01);
+      min-height: 44px;
+    }
+    .todo-input:focus { outline: none; border-color: var(--primary); }
+    .btn-add {
+      background: var(--primary); color: white; border: none; border-radius: var(--radius-sm);
+      padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap;
+      min-height: 44px; min-width: 60px; transition: background 0.15s;
+    }
+    .btn-add:hover { background: var(--primary-light); }
+    .btn-add:active { transform: scale(0.96); }
+
+    /* AI Recommendation box */
+    .ai-recommend-box {
+      background: linear-gradient(135deg, var(--purple-bg), var(--primary-bg));
+      border: 1px solid var(--primary-border); border-radius: var(--radius);
+      padding: 14px 16px; margin-bottom: 14px; display: none;
+    }
+    .ai-recommend-box.show { display: block; }
+    .ai-recommend-label { font-size: 11px; font-weight: 700; color: var(--purple); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+    .ai-recommend-item {
+      display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 4px 0;
+      background: white; border-radius: var(--radius-sm); border: 1px solid var(--border);
+      cursor: pointer; font-size: 13px; transition: border-color 0.15s; min-height: 44px;
+    }
+    .ai-recommend-item:hover { border-color: var(--primary); }
+    .recommend-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 600; flex-shrink: 0; }
+    .badge-initiative { background: var(--primary-bg); color: var(--primary); }
+    .badge-goal { background: var(--blue-bg); color: var(--blue); }
+
+    /* ── Focus card (Idea A) ── */
+    .focus-card {
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-      border-radius: 20px;
-      padding: 36px 32px;
-      margin-bottom: 28px;
-      color: white;
+      border-radius: var(--radius); padding: 16px 18px; margin-bottom: 16px; color: white;
     }
-    .hero h1 {
-      font-size: 26px;
-      font-weight: 800;
-      margin-bottom: 6px;
-      letter-spacing: -0.5px;
-    }
-    .hero p {
-      font-size: 14px;
-      opacity: 0.85;
-      margin-bottom: 20px;
-    }
-    .input-row {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
-    }
-    .goal-input {
-      flex: 1;
-      background: rgba(255,255,255,0.95);
-      border: 2px solid transparent;
-      border-radius: var(--radius);
-      padding: 14px 16px;
-      font-size: 15px;
-      color: var(--text-01);
-      resize: none;
-      min-height: 52px;
-      max-height: 140px;
-      transition: border-color 0.2s;
-      font-family: inherit;
-    }
-    .goal-input:focus {
-      outline: none;
-      border-color: white;
-    }
-    .goal-input::placeholder { color: var(--text-03); }
-    .btn-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .btn-primary {
-      background: white;
-      color: var(--primary);
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 14px 20px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: transform 0.15s, box-shadow 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-primary:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .btn-primary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .btn-mic {
-      background: rgba(255,255,255,0.2);
-      color: white;
-      border: 2px solid rgba(255,255,255,0.4);
-      border-radius: var(--radius-sm);
-      padding: 12px 16px;
-      font-size: 18px;
-      cursor: pointer;
-      transition: background 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .btn-mic:hover { background: rgba(255,255,255,0.3); }
-    .btn-mic.recording {
-      background: #FF4242;
-      border-color: #FF4242;
-      animation: pulse 1s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
+    .focus-label { font-size: 10px; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .focus-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .focus-reason { font-size: 12px; opacity: 0.85; }
 
-    /* ── Loading state ── */
-    .loading-card {
-      background: var(--bg-01);
-      border-radius: var(--radius);
-      padding: 32px;
-      text-align: center;
-      margin-bottom: 20px;
-      box-shadow: var(--shadow);
+    /* ── Todo list ── */
+    .todo-list { display: flex; flex-direction: column; gap: 8px; }
+    .todo-item {
+      display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-01);
+      transition: box-shadow 0.15s; animation: slideIn 0.2s ease;
     }
-    .spinner {
-      width: 40px;
-      height: 40px;
-      border: 3px solid var(--primary-border);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 16px;
+    @keyframes slideIn { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+    .todo-item.done { opacity: 0.5; }
+    .todo-item.done .todo-title { text-decoration: line-through; }
+    .todo-check {
+      width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border);
+      cursor: pointer; flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s; min-width: 22px;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading-text {
-      color: var(--text-02);
-      font-size: 14px;
-    }
-    .loading-goal {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--primary);
-      margin-bottom: 8px;
-    }
+    .todo-check:hover { border-color: var(--primary); }
+    .todo-check.checked { background: var(--primary); border-color: var(--primary); }
+    .todo-check.checked::after { content:''; width:5px; height:8px; border:2px solid white; border-top:none; border-left:none; transform:rotate(45deg) translateY(-1px); }
+    .todo-body { flex: 1; min-width: 0; }
+    .todo-title { font-size: 14px; font-weight: 500; margin-bottom: 3px; word-break: break-word; }
+    .todo-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .tag { font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+    .tag-initiative { background: var(--primary-bg); color: var(--primary); }
+    .tag-goal { background: var(--blue-bg); color: var(--blue); }
+    .tag-none { background: var(--bg-03); color: var(--text-03); }
+    .tag-pending { background: #FFF3CD; color: #856404; }
+    .todo-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .btn-icon { width: 32px; height: 32px; border:none; border-radius: 6px; background:transparent; color:var(--text-03); cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:background 0.15s; }
+    .btn-icon:hover { background: var(--bg-02); }
+    .btn-icon.del:hover { background: var(--high-bg); color: var(--high); }
 
-    /* ── Result section ── */
-    .section-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .section-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-01);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .section-meta {
-      font-size: 13px;
-      color: var(--text-03);
-    }
+    /* ── Insight ── */
+    .insight-stat { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .insight-stat:last-child { border-bottom: none; }
+    .insight-label { font-size: 13px; color: var(--text-02); }
+    .insight-value { font-size: 14px; font-weight: 700; }
+    .progress-bar { height: 6px; background: var(--bg-03); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 3px; background: var(--primary); transition: width 0.5s; }
 
-    /* ── Task card ── */
-    .task-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 28px;
-    }
-    .task-card {
-      background: var(--bg-01);
-      border-radius: var(--radius);
-      padding: 16px 18px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      transition: box-shadow 0.2s, opacity 0.2s;
-      animation: fadeIn 0.3s ease forwards;
-    }
-    .task-card:hover { box-shadow: var(--shadow-lg); }
-    .task-card.done { opacity: 0.5; }
-    .task-card.done .task-title { text-decoration: line-through; }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    /* ── Heatmap ── */
+    .heat-0 { background: var(--bg-03); }
+    .heat-1 { background: #FFE3D8; }
+    .heat-2 { background: #FFAF8A; }
+    .heat-3 { background: #FF6114; }
+    .heat-4 { background: #F85100; }
 
-    .task-check {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 2px solid var(--border);
-      cursor: pointer;
-      flex-shrink: 0;
-      margin-top: 1px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.2s, border-color 0.2s;
-    }
-    .task-check:hover { border-color: var(--primary); }
-    .task-check.checked {
-      background: var(--primary);
-      border-color: var(--primary);
-    }
-    .task-check.checked::after {
-      content: '';
-      width: 6px;
-      height: 10px;
-      border: 2px solid white;
-      border-top: none;
-      border-left: none;
-      transform: rotate(45deg) translateY(-1px);
-    }
+    /* ── Team member rows ── */
+    .member-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .member-row:last-child { border-bottom: none; }
+    .member-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--primary-bg); display: flex; align-items: center; justify-content: center; font-size: 16px; overflow: hidden; flex-shrink: 0; }
+    .member-avatar img { width:100%; height:100%; object-fit:cover; }
+    .member-info { flex: 1; min-width: 0; }
+    .member-name { font-size: 13px; font-weight: 600; }
+    .member-todo-count { font-size: 12px; color: var(--text-03); }
+    .member-badges { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+    .count-badge { font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 10px; }
+    .cb-initiative { background: var(--primary-bg); color: var(--primary); }
+    .cb-goal { background: var(--blue-bg); color: var(--blue); }
+    .not-submitted { font-size: 11px; color: var(--high); font-weight: 600; background: var(--high-bg); padding: 2px 8px; border-radius: 10px; }
 
-    .task-body { flex: 1; min-width: 0; }
-    .task-title {
-      font-size: 15px;
-      font-weight: 600;
-      margin-bottom: 4px;
-      word-break: keep-all;
-    }
-    .task-detail {
-      font-size: 13px;
-      color: var(--text-02);
-      line-height: 1.5;
-      word-break: keep-all;
-    }
-    .task-footer {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 10px;
-      flex-wrap: wrap;
-    }
-    .badge {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 20px;
-    }
-    .badge-high { background: var(--high-bg); color: var(--high); }
-    .badge-medium { background: var(--medium-bg); color: var(--medium); }
-    .badge-low { background: var(--low-bg); color: var(--low); }
-    .badge-done { background: var(--done-bg); color: var(--text-03); }
+    /* ── Premise cards ── */
+    .premise-list { display: flex; flex-direction: column; gap: 10px; }
+    .premise-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; background: var(--bg-01); }
+    .premise-type-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-bottom: 6px; }
+    .premise-initiative { background: var(--primary-bg); color: var(--primary); }
+    .premise-goal { background: var(--blue-bg); color: var(--blue); }
+    .premise-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .premise-desc { font-size: 13px; color: var(--text-02); }
+    .premise-actions { display: flex; gap: 6px; margin-top: 10px; }
+    .btn-sm { padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; min-height: 36px; }
+    .btn-primary-sm { background: var(--primary); color: white; }
+    .btn-secondary-sm { background: var(--bg-02); color: var(--text-02); border: 1px solid var(--border); }
 
-    .task-actions {
-      display: flex;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-    .btn-icon {
-      width: 32px;
-      height: 32px;
-      border: none;
-      border-radius: 8px;
-      background: transparent;
-      color: var(--text-03);
-      cursor: pointer;
-      font-size: 15px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background 0.15s;
-    }
-    .btn-icon:hover { background: var(--bg-02); color: var(--text-01); }
-    .btn-icon.delete:hover { background: var(--high-bg); color: var(--high); }
+    /* ── Decompose box (Idea D) ── */
+    .decompose-box { background: var(--purple-bg); border: 1px dashed var(--purple); border-radius: var(--radius); padding: 14px; margin-top: 12px; }
+    .decompose-title { font-size: 13px; font-weight: 700; color: var(--purple); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
 
-    /* ── All tasks section ── */
-    .filter-tabs {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 14px;
-      background: var(--bg-03);
-      padding: 4px;
-      border-radius: 10px;
-      width: fit-content;
-    }
-    .filter-tab {
-      padding: 6px 14px;
-      border-radius: 8px;
-      border: none;
-      background: transparent;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-03);
-      cursor: pointer;
-      transition: background 0.15s, color 0.15s;
-    }
-    .filter-tab.active {
-      background: white;
-      color: var(--primary);
-      font-weight: 700;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
-
-    /* ── Empty state ── */
-    .empty-state {
-      text-align: center;
-      padding: 48px 20px;
-      color: var(--text-03);
-    }
-    .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
-    .empty-state p { font-size: 14px; line-height: 1.6; }
+    /* ── Modals ── */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:200; display:flex; align-items:flex-end; justify-content:center; animation:fadeIn 0.15s; }
+    .modal { background:white; border-radius:20px 20px 0 0; padding:24px 20px; width:100%; max-width:480px; box-shadow:var(--shadow-lg); padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+    .modal-title { font-size:16px; font-weight:700; margin-bottom:16px; }
+    .modal-field { margin-bottom:14px; }
+    .modal-label { font-size:12px; font-weight:600; color:var(--text-02); margin-bottom:5px; display:block; }
+    .modal-input { width:100%; border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:11px 12px; font-size:14px; font-family:inherit; min-height:44px; }
+    .modal-input:focus { outline:none; border-color:var(--primary); }
+    .modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:20px; }
+    .btn-cancel { background:var(--bg-02); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 18px; font-size:13px; font-weight:600; cursor:pointer; min-height:44px; }
+    .btn-confirm { background:var(--primary); color:white; border:none; border-radius:var(--radius-sm); padding:10px 18px; font-size:13px; font-weight:700; cursor:pointer; min-height:44px; }
 
     /* ── Toast ── */
     .toast {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: var(--text-01);
-      color: white;
-      padding: 12px 20px;
-      border-radius: 100px;
-      font-size: 14px;
-      font-weight: 500;
-      z-index: 999;
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-      white-space: nowrap;
+      position:fixed; bottom:calc(var(--bottom-nav) + 12px); left:50%;
+      transform:translateX(-50%) translateY(80px);
+      background:var(--text-01); color:white; padding:10px 18px; border-radius:100px;
+      font-size:13px; font-weight:500; z-index:999;
+      transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1); white-space:nowrap;
+      max-width: calc(100vw - 40px); text-align: center;
     }
-    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.show { transform:translateX(-50%) translateY(0); }
 
-    /* ── Error ── */
-    .error-card {
-      background: var(--high-bg);
-      border: 1px solid var(--high);
-      border-radius: var(--radius);
-      padding: 16px 18px;
-      margin-bottom: 20px;
-      color: var(--high);
-      font-size: 14px;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
+    /* ── Empty state ── */
+    .empty { text-align:center; padding:32px 16px; color:var(--text-03); }
+    .empty .emoji { font-size:36px; margin-bottom:8px; }
+    .empty p { font-size:13px; }
+
+    /* ── Spinner ── */
+    .spin { width:16px; height:16px; border:2px solid var(--primary-border); border-top-color:var(--primary); border-radius:50%; animation:spin 0.7s linear infinite; display:inline-block; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* ── 반응형: 태블릿 ── */
+    @media (max-width: 1024px) {
+      .grid-3 { grid-template-columns: 1fr 1fr; }
     }
 
-    /* ── Responsive ── */
-    @media (max-width: 600px) {
-      .hero { padding: 24px 20px; }
-      .hero h1 { font-size: 21px; }
-      .input-row { flex-direction: column; }
-      .btn-group { flex-direction: row; }
-      main { padding: 20px 16px 80px; }
+    /* ── 반응형: 모바일 (768px 이하) ── */
+    @media (max-width: 768px) {
+      /* 사이드바 → 드로어로 전환 */
+      .sidebar {
+        transform: translateX(-100%);
+        width: 280px;
+        z-index: 100;
+        box-shadow: var(--shadow-lg);
+      }
+      .sidebar.open { transform: translateX(0); }
+
+      /* 모바일 헤더 표시 */
+      .mobile-header { display: flex; }
+
+      /* 하단 네비게이션 표시 */
+      .bottom-nav { display: flex; flex-direction: column; }
+      .bottom-nav-more { display: flex; }
+
+      /* 메인 콘텐츠 조정 */
+      .main-content {
+        margin-left: 0;
+        padding-top: 56px;
+        padding-bottom: var(--bottom-nav);
+      }
+      .page-header { display: none; }
+
+      /* 컨텐츠 패딩 줄이기 */
+      .content-area { padding: 14px 14px; }
+
+      /* 그리드 → 단일 컬럼 */
+      .grid-2 { grid-template-columns: 1fr; gap: 12px; }
+      .grid-3 { grid-template-columns: 1fr; gap: 12px; }
+      .col-span-2 { grid-column: span 1; }
+
+      /* 카드 */
+      .card-body { padding: 14px; }
+      .card-header { padding: 12px 14px; }
+
+      /* 투두 입력 */
+      .todo-input { font-size: 16px; /* iOS 자동 줌 방지 */ }
+
+      /* 히트맵 테이블 스크롤 */
+      .heatmap-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+      /* 멤버 배지 세로 */
+      .member-badges { flex-direction: column; align-items: flex-end; }
+
+      /* 모달 */
+      .modal { border-radius: 20px 20px 0 0; }
+
+      /* 토스트 위치 */
+      .toast { bottom: calc(var(--bottom-nav) + 16px); }
+    }
+
+    /* ── 반응형: 소형 모바일 (375px 이하) ── */
+    @media (max-width: 375px) {
+      .login-card { padding: 32px 20px; }
+      .content-area { padding: 12px 12px; }
+      .focus-title { font-size: 14px; }
     }
   </style>
 </head>
 <body>
 
-<header>
-  <a class="logo" href="#"><span>💥</span> Blow Your Work</a>
-  <span class="task-count" id="task-count">0 tasks</span>
-</header>
+<!-- ── Login Screen ── -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">💥</div>
+    <div class="login-title">TeamFlow</div>
+    <div class="login-sub">팀의 할일과 목표를 하나로 연결하는<br>AI 생산성 플랫폼</div>
+    <a class="btn-github" href="/auth/github">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      GitHub으로 로그인
+    </a>
+    <div class="login-demo">
+      <div>GitHub OAuth 설정 전 데모로 사용해보기</div>
+      <button class="btn-demo" onclick="enterDemo()">🚀 데모 모드로 시작</button>
+    </div>
+  </div>
+</div>
 
-<main>
-  <!-- Hero: goal input -->
-  <section class="hero">
-    <h1>목표를 날려버리세요 🚀</h1>
-    <p>자연어로 목표를 입력하면 Copilot이 실행 가능한 태스크로 분해해드립니다</p>
-    <div class="input-row">
-      <textarea
-        id="goal-input"
-        class="goal-input"
-        placeholder="예: 사이드 프로젝트 MVP를 2주 안에 완성하고 싶어"
-        rows="2"
-      ></textarea>
-      <div class="btn-group">
-        <button class="btn-primary" id="breakdown-btn" onclick="handleBreakdown()">
-          <span>⚡</span> 분해하기
-        </button>
-        <button class="btn-mic" id="mic-btn" title="음성 입력" onclick="toggleMic()">🎙️</button>
+<!-- ── App Shell ── -->
+<div id="app">
+
+  <!-- 모바일 헤더 -->
+  <div class="mobile-header">
+    <button class="btn-hamburger" onclick="toggleDrawer()" aria-label="메뉴">☰</button>
+    <span class="mobile-page-title" id="mobile-page-title">오늘의 할일</span>
+    <div id="mobile-avatar" style="width:32px;height:32px;border-radius:50%;background:var(--primary-bg);display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden;"></div>
+  </div>
+
+  <!-- 드로어 오버레이 -->
+  <div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+  <div class="app-layout">
+    <!-- Sidebar / Drawer -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-logo"><span>💥</span> TeamFlow</div>
+      <div class="sidebar-section">나의 작업</div>
+      <button class="nav-item active" onclick="showPage('home', this)"><span class="nav-icon">🏠</span> 오늘의 할일</button>
+      <button class="nav-item" onclick="showPage('history', this)"><span class="nav-icon">📚</span> 히스토리</button>
+      <button class="nav-item" onclick="showPage('insight', this)"><span class="nav-icon">📊</span> 주간 인사이트</button>
+      <div class="sidebar-section">팀</div>
+      <button class="nav-item" onclick="showPage('team', this)"><span class="nav-icon">👥</span> 팀 대시보드</button>
+      <button class="nav-item" onclick="showPage('heatmap', this)"><span class="nav-icon">🔥</span> 기여 히트맵</button>
+      <div class="sidebar-section">목표</div>
+      <button class="nav-item" onclick="showPage('premises', this)"><span class="nav-icon">🎯</span> 이니셔티브 / 목표</button>
+      <div class="sidebar-user">
+        <div class="user-avatar" id="sidebar-avatar">😊</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-username">사용자</div>
+          <div class="user-role" id="sidebar-role">member</div>
+        </div>
+        <button class="btn-logout" onclick="logout()" title="로그아웃">↩</button>
       </div>
-    </div>
-  </section>
+    </nav>
 
-  <!-- Loading -->
-  <div id="loading-section" style="display:none">
-    <div class="loading-card">
-      <div class="spinner"></div>
-      <div class="loading-goal" id="loading-goal-text"></div>
-      <div class="loading-text">Copilot이 목표를 분석하고 있어요...</div>
-    </div>
-  </div>
-
-  <!-- Error -->
-  <div id="error-section" style="display:none">
-    <div class="error-card">
-      <span>⚠️</span>
-      <span id="error-text"></span>
-    </div>
-  </div>
-
-  <!-- Latest breakdown result -->
-  <div id="result-section" style="display:none">
-    <div class="section-header">
-      <div class="section-title">✨ 분해된 태스크 <span id="result-goal-badge" class="badge badge-medium" style="font-size:12px;"></span></div>
-      <div class="section-meta" id="result-count"></div>
-    </div>
-    <div class="task-list" id="result-list"></div>
-  </div>
-
-  <!-- All tasks -->
-  <div id="tasks-section">
-    <div class="section-header">
-      <div class="section-title">📋 전체 태스크</div>
-      <button onclick="loadAllTasks()" style="background:none;border:none;font-size:13px;color:var(--text-03);cursor:pointer;">새로고침</button>
-    </div>
-    <div class="filter-tabs">
-      <button class="filter-tab active" onclick="setFilter('all', this)">전체</button>
-      <button class="filter-tab" onclick="setFilter('todo', this)">미완료</button>
-      <button class="filter-tab" onclick="setFilter('done', this)">완료</button>
-    </div>
-    <div id="all-tasks-list">
-      <div class="empty-state">
-        <div class="emoji">💭</div>
-        <p>아직 태스크가 없어요.<br>목표를 입력해 Copilot에게 맡겨보세요!</p>
+    <!-- Main -->
+    <div class="main-content">
+      <div class="page-header">
+        <div class="page-title" id="page-title">오늘의 할일</div>
+        <div class="page-date" id="page-date"></div>
       </div>
+      <div class="content-area" id="content-area"></div>
     </div>
   </div>
-</main>
 
+  <!-- 하단 네비게이션 (모바일) -->
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button class="bottom-nav-item active" id="bnav-home" onclick="showPage('home',this,'bnav-home')">
+        <span class="bnav-icon">🏠</span><span>할일</span>
+      </button>
+      <button class="bottom-nav-item" id="bnav-team" onclick="showPage('team',this,'bnav-team')">
+        <span class="bnav-icon">👥</span><span>팀</span>
+      </button>
+      <button class="bottom-nav-item" id="bnav-heatmap" onclick="showPage('heatmap',this,'bnav-heatmap')">
+        <span class="bnav-icon">🔥</span><span>히트맵</span>
+      </button>
+      <button class="bottom-nav-item" id="bnav-premises" onclick="showPage('premises',this,'bnav-premises')">
+        <span class="bnav-icon">🎯</span><span>목표</span>
+      </button>
+      <button class="bottom-nav-item" id="bnav-insight" onclick="showPage('insight',this,'bnav-insight')">
+        <span class="bnav-icon">📊</span><span>인사이트</span>
+      </button>
+    </div>
+  </nav>
+</div>
+
+<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-  const API = '';
-  let currentFilter = 'all';
-  let allTasks = [];
+// ── State ──────────────────────────────────────────────────────────────────
+const API = '';
+let currentUser = null;
+let todos = [];
+let premises = [];
+let teamMembers = [];
+const IS_LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
 
-  // ── Auto-resize textarea ──
-  const goalInput = document.getElementById('goal-input');
-  goalInput.addEventListener('input', () => {
-    goalInput.style.height = 'auto';
-    goalInput.style.height = Math.min(goalInput.scrollHeight, 140) + 'px';
+// ── 전체 데모 데이터셋 ───────────────────────────────────────────────────
+const TODAY = new Date().toISOString().slice(0,10);
+
+const DEMO_TEAMS = [
+  { id:1, name:'개발팀' },
+  { id:2, name:'기획팀' },
+  { id:3, name:'영업팀' },
+  { id:4, name:'회계팀' },
+];
+
+const DEMO_USERS = [
+  // 개발팀
+  { id:1,  name:'김지훈',  username:'jihun_k',  role:'leader', team_id:1, emoji:'👨‍💻' },
+  { id:2,  name:'이수아',  username:'sua_l',    role:'member', team_id:1, emoji:'👩‍💻' },
+  { id:3,  name:'박민준',  username:'minjun_p', role:'member', team_id:1, emoji:'🧑‍💻' },
+  { id:4,  name:'최서연',  username:'seoyeon_c',role:'member', team_id:1, emoji:'👩‍🎨' },
+  // 기획팀
+  { id:5,  name:'정하은',  username:'haeun_j',  role:'leader', team_id:2, emoji:'📋' },
+  { id:6,  name:'강민호',  username:'minho_k',  role:'member', team_id:2, emoji:'🗂️' },
+  { id:7,  name:'윤서진',  username:'seojin_y', role:'member', team_id:2, emoji:'📊' },
+  // 영업팀
+  { id:8,  name:'송태준',  username:'taejun_s', role:'leader', team_id:3, emoji:'💼' },
+  { id:9,  name:'임나연',  username:'nayeon_l', role:'member', team_id:3, emoji:'📞' },
+  { id:10, name:'한동욱',  username:'donguk_h', role:'member', team_id:3, emoji:'🤝' },
+  // 회계팀
+  { id:11, name:'조미래',  username:'mirae_j',  role:'leader', team_id:4, emoji:'📒' },
+  { id:12, name:'남궁현',  username:'hyun_n',   role:'member', team_id:4, emoji:'🧾' },
+  { id:13, name:'오지원',  username:'jiwon_o',  role:'member', team_id:4, emoji:'💰' },
+];
+
+const DEMO_PREMISES = {
+  1: [ // 개발팀
+    { id:101, type:'initiative', title:'반복 업무 자동화하기', description:'DML·배포 등 반복 작업 자동화로 생산성 30% 향상', team_id:1, is_active:1 },
+    { id:102, type:'initiative', title:'결제 안정성 강화하기', description:'결제 오류율 0.1% 이하, 실시간 모니터링 구축', team_id:1, is_active:1 },
+    { id:103, type:'goal', title:'DML 처리 자동화',       description:'일 100건 이상 수동 DB 작업 스크립트 전환', team_id:1, is_active:1 },
+    { id:104, type:'goal', title:'매일 답장 자동화',       description:'Slack 봇 정기 메시지 자동 발송', team_id:1, is_active:1 },
+    { id:105, type:'goal', title:'결제 오류 알림 시스템', description:'에러 발생 시 Slack 실시간 알림', team_id:1, is_active:1 },
+  ],
+  2: [ // 기획팀
+    { id:201, type:'initiative', title:'사용자 경험 개선하기',   description:'UX 리서치→프로토타입→반영 사이클 단축', team_id:2, is_active:1 },
+    { id:202, type:'initiative', title:'데이터 기반 의사결정',   description:'GA·SQL 분석 리포트 주 1회 정례화', team_id:2, is_active:1 },
+    { id:203, type:'goal', title:'결제 UX 인터뷰 5건',    description:'실사용자 인터뷰로 페인포인트 도출', team_id:2, is_active:1 },
+    { id:204, type:'goal', title:'월간 KPI 대시보드 구축', description:'핵심 지표 자동 시각화 도구 제작', team_id:2, is_active:1 },
+  ],
+  3: [ // 영업팀
+    { id:301, type:'initiative', title:'신규 고객 확보하기',    description:'분기 신규 계약 20건 달성', team_id:3, is_active:1 },
+    { id:302, type:'initiative', title:'고객 재계약률 높이기',  description:'재계약률 85% 이상 유지', team_id:3, is_active:1 },
+    { id:303, type:'goal', title:'콜드 이메일 캠페인',    description:'주 200건 아웃바운드 이메일 발송', team_id:3, is_active:1 },
+    { id:304, type:'goal', title:'고객 CS 대응 자동화',   description:'FAQ 봇으로 1차 응대 자동화', team_id:3, is_active:1 },
+  ],
+  4: [ // 회계팀
+    { id:401, type:'initiative', title:'재무 프로세스 자동화',  description:'월결산 소요 시간 50% 단축', team_id:4, is_active:1 },
+    { id:402, type:'initiative', title:'비용 투명성 확보',      description:'팀별 지출 실시간 대시보드 운영', team_id:4, is_active:1 },
+    { id:403, type:'goal', title:'전표 자동 분류',        description:'AI로 계정과목 자동 태깅', team_id:4, is_active:1 },
+    { id:404, type:'goal', title:'월간 비용 리포트 자동화', description:'구글시트 → 슬랙 자동 발송', team_id:4, is_active:1 },
+  ],
+};
+
+const DEMO_TODOS = {
+  1:  [ // 김지훈 (개발팀 팀장)
+    { id:1001, title:'DML 배치 스크립트 코드 리뷰',    status:'done', analysis:{relation:'initiative',confidence:0.93} },
+    { id:1002, title:'결제 오류 알림 Slack 채널 설정', status:'todo', analysis:{relation:'goal',confidence:0.91} },
+    { id:1003, title:'신규 팀원 온보딩 체크리스트',    status:'todo', analysis:{relation:'initiative',confidence:0.78} },
+    { id:1004, title:'주간 기여도 분석 문서 업데이트', status:'todo', analysis:{relation:'initiative',confidence:0.85} },
+    { id:1005, title:'팀 스탠드업 진행',               status:'done', analysis:{relation:'none', confidence:0.08} },
+  ],
+  2:  [ // 이수아 (개발팀)
+    { id:2001, title:'DML 고객 등급 업데이트 스크립트', status:'done', analysis:{relation:'goal',confidence:0.97} },
+    { id:2002, title:'결제 실패 에러 코드 Slack 알림',  status:'todo', analysis:{relation:'goal',confidence:0.92} },
+    { id:2003, title:'정산 데이터 추출 쿼리 자동화',    status:'todo', analysis:{relation:'initiative',confidence:0.86} },
+    { id:2004, title:'PR 리뷰 — 로그인 플로우 개선',    status:'todo', analysis:{relation:'none', confidence:0.15} },
+  ],
+  3:  [ // 박민준 (개발팀)
+    { id:3001, title:'GitHub Actions 스테이징 배포 완성', status:'done', analysis:{relation:'initiative',confidence:0.96} },
+    { id:3002, title:'Docker 멀티스테이지 빌드 최적화',   status:'todo', analysis:{relation:'initiative',confidence:0.83} },
+    { id:3003, title:'API 레이트리밋 적용',               status:'todo', analysis:{relation:'initiative',confidence:0.72} },
+    { id:3004, title:'오전 스탠드업 참석',                status:'done', analysis:{relation:'none', confidence:0.05} },
+  ],
+  4:  [ // 최서연 (개발팀)
+    { id:4001, title:'간편결제 UX 프로토타입 Figma',    status:'todo', analysis:{relation:'initiative',confidence:0.89} },
+    { id:4002, title:'결제 UX 인터뷰 2건 진행',         status:'todo', analysis:{relation:'initiative',confidence:0.93} },
+    { id:4003, title:'인터뷰 인사이트 문서 정리',        status:'done', analysis:{relation:'initiative',confidence:0.91} },
+  ],
+  5:  [ // 정하은 (기획팀 팀장)
+    { id:5001, title:'Q3 OKR 전략 문서 작성',           status:'todo', analysis:{relation:'initiative',confidence:0.90} },
+    { id:5002, title:'사용자 인터뷰 결과 분석 리포트',  status:'done', analysis:{relation:'goal',confidence:0.94} },
+    { id:5003, title:'월간 KPI 대시보드 기획안',        status:'todo', analysis:{relation:'goal',confidence:0.88} },
+    { id:5004, title:'타팀 협업 회의 준비',             status:'todo', analysis:{relation:'none', confidence:0.12} },
+  ],
+  6:  [ // 강민호 (기획팀)
+    { id:6001, title:'GA4 이벤트 분석 리포트 작성',    status:'done', analysis:{relation:'initiative',confidence:0.87} },
+    { id:6002, title:'결제 퍼널 이탈률 분석',          status:'todo', analysis:{relation:'goal',confidence:0.92} },
+    { id:6003, title:'A/B 테스트 결과 문서화',         status:'todo', analysis:{relation:'initiative',confidence:0.80} },
+  ],
+  7:  [ // 윤서진 (기획팀)
+    { id:7001, title:'경쟁사 UX 벤치마킹 보고서',      status:'todo', analysis:{relation:'initiative',confidence:0.85} },
+    { id:7002, title:'신규 온보딩 플로우 와이어프레임', status:'done', analysis:{relation:'goal',confidence:0.91} },
+    { id:7003, title:'사용성 테스트 리크루팅 (5명)',    status:'todo', analysis:{relation:'goal',confidence:0.88} },
+  ],
+  8:  [ // 송태준 (영업팀 팀장)
+    { id:8001, title:'신규 리드 50건 파이프라인 추가', status:'done', analysis:{relation:'initiative',confidence:0.95} },
+    { id:8002, title:'재계약 고객 QBR 미팅 준비',      status:'todo', analysis:{relation:'initiative',confidence:0.90} },
+    { id:8003, title:'콜드 이메일 템플릿 A/B 작성',    status:'todo', analysis:{relation:'goal',confidence:0.86} },
+    { id:8004, title:'CRM 데이터 정리',                status:'done', analysis:{relation:'none', confidence:0.18} },
+  ],
+  9:  [ // 임나연 (영업팀)
+    { id:9001, title:'아웃바운드 이메일 200건 발송',   status:'done', analysis:{relation:'goal',confidence:0.97} },
+    { id:9002, title:'잠재 고객 콜 스크립트 개선',     status:'todo', analysis:{relation:'initiative',confidence:0.82} },
+    { id:9003, title:'이번 주 데모 미팅 3건 확정',     status:'todo', analysis:{relation:'initiative',confidence:0.91} },
+  ],
+  10: [ // 한동욱 (영업팀)
+    { id:10001, title:'고객 CS FAQ 봇 시나리오 작성',  status:'todo', analysis:{relation:'goal',confidence:0.89} },
+    { id:10002, title:'재계약 고객 만족도 서베이 발송', status:'done', analysis:{relation:'initiative',confidence:0.85} },
+    { id:10003, title:'영업 파이프라인 주간 리뷰 자료', status:'todo', analysis:{relation:'none', confidence:0.22} },
+  ],
+  11: [ // 조미래 (회계팀 팀장)
+    { id:11001, title:'월간 비용 리포트 자동화 기획',  status:'done', analysis:{relation:'goal',confidence:0.96} },
+    { id:11002, title:'팀별 Q2 예산 집행률 검토',      status:'todo', analysis:{relation:'initiative',confidence:0.88} },
+    { id:11003, title:'전표 AI 자동 분류 정확도 검수',  status:'todo', analysis:{relation:'goal',confidence:0.92} },
+    { id:11004, title:'세무사 미팅 자료 준비',          status:'todo', analysis:{relation:'none', confidence:0.10} },
+  ],
+  12: [ // 남궁현 (회계팀)
+    { id:12001, title:'법인카드 지출 내역 전표 처리',  status:'done', analysis:{relation:'goal',confidence:0.94} },
+    { id:12002, title:'구글시트 → Slack 리포트 자동화', status:'todo', analysis:{relation:'goal',confidence:0.93} },
+    { id:12003, title:'계정과목 분류 기준 문서 업데이트', status:'todo', analysis:{relation:'initiative',confidence:0.80} },
+  ],
+  13: [ // 오지원 (회계팀)
+    { id:13001, title:'매입 세금계산서 대사 작업',     status:'done', analysis:{relation:'initiative',confidence:0.87} },
+    { id:13002, title:'비용 대시보드 Looker 지표 추가', status:'todo', analysis:{relation:'initiative',confidence:0.91} },
+    { id:13003, title:'월말 결산 체크리스트 실행',      status:'todo', analysis:{relation:'initiative',confidence:0.85} },
+  ],
+};
+
+// teamMembers 계산 헬퍼
+function buildTeamMembers(teamId) {
+  return DEMO_USERS.filter(u => u.team_id === teamId).map(u => {
+    const userTodos = (DEMO_TODOS[u.id] || []).map(t => ({
+      ...t, todo_date: TODAY, user_id: u.id,
+    }));
+    return {
+      user_id: u.id,
+      username: u.name,
+      avatar_url: '',
+      emoji: u.emoji,
+      total: userTodos.length,
+      done: userTodos.filter(t => t.status === 'done').length,
+      initiative_related: userTodos.filter(t => t.analysis?.relation === 'initiative').length,
+      goal_related: userTodos.filter(t => t.analysis?.relation === 'goal').length,
+    };
   });
-  goalInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleBreakdown();
-  });
+}
 
-  // ── Toast ──
-  function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+function switchDemoUser(userId) {
+  const user = DEMO_USERS.find(u => u.id === userId);
+  if (!user) return;
+  currentUser = { ...user, avatar_url: '', github_id: `demo_${userId}` };
+  todos = (DEMO_TODOS[userId] || []).map(t => ({ ...t, todo_date: TODAY, user_id: userId }));
+  premises = DEMO_PREMISES[user.team_id] || [];
+  teamMembers = buildTeamMembers(user.team_id);
+  refreshApp();
+  showToast(`👤 ${user.emoji} ${user.name} (${DEMO_TEAMS.find(t=>t.id===user.team_id)?.name}) 뷰로 전환`);
+  debugPanelRender();
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  updateDate();
+  if (location.search.includes('demo=1')) { enterDemo(); return; }
+  try {
+    const res = await fetch(`${API}/auth/me`, { credentials: 'include' });
+    if (res.ok) { currentUser = await res.json(); showApp(); }
+  } catch (_) {}
+});
+
+function updateDate() {
+  const now = new Date();
+  const el = document.getElementById('page-date');
+  if (el) el.textContent = now.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+}
+
+function enterDemo() {
+  switchDemoUser(1); // 기본: 개발팀 김지훈 (팀장)
+  showApp();
+  showToast('🚀 데모 모드로 시작했어요!');
+}
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('app').style.flexDirection = 'column';
+  refreshApp();
+  if (IS_LOCAL) debugPanelInit();
+}
+
+function refreshApp() {
+  if (!currentUser) return;
+  const av = document.getElementById('sidebar-avatar');
+  const mav = document.getElementById('mobile-avatar');
+  const initial = currentUser.emoji || currentUser.name?.[0] || '😊';
+  if (currentUser.avatar_url) {
+    if (av) av.innerHTML = `<img src="${currentUser.avatar_url}" />`;
+    if (mav) mav.innerHTML = `<img src="${currentUser.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>`;
+  } else {
+    if (av) av.textContent = initial;
+    if (mav) mav.textContent = initial;
   }
+  const teamName = DEMO_TEAMS.find(t => t.id === currentUser.team_id)?.name || '';
+  if (document.getElementById('sidebar-username')) document.getElementById('sidebar-username').textContent = currentUser.name || currentUser.username;
+  if (document.getElementById('sidebar-role')) document.getElementById('sidebar-role').textContent = `${currentUser.role === 'leader' ? '팀장' : '팀원'} · ${teamName}`;
+  showPage('home');
+}
 
-  // ── Breakdown ──
-  async function handleBreakdown() {
-    const goal = goalInput.value.trim();
-    if (!goal) { showToast('목표를 입력해주세요!'); return; }
+// ── Drawer (모바일) ────────────────────────────────────────────────────────
+function toggleDrawer() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('drawer-overlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('open');
+}
+function closeDrawer() {
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('drawer-overlay')?.classList.remove('open');
+}
 
-    const btn = document.getElementById('breakdown-btn');
-    btn.disabled = true;
-    btn.innerHTML = '<span>⏳</span> 분석 중...';
+// ── Navigation ─────────────────────────────────────────────────────────────
+const pageTitles = { home:'오늘의 할일', history:'히스토리', insight:'주간 인사이트', team:'팀 대시보드', heatmap:'기여 히트맵', premises:'이니셔티브 / 목표' };
 
-    document.getElementById('error-section').style.display = 'none';
-    document.getElementById('result-section').style.display = 'none';
-    document.getElementById('loading-goal-text').textContent = `"${goal}"`;
-    document.getElementById('loading-section').style.display = 'block';
-
-    try {
-      const res = await fetch(`${API}/ai/breakdown?save=true`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goal, model: 'gpt-4.1' })
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || `HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
-      document.getElementById('loading-section').style.display = 'none';
-      renderResult(data);
-      goalInput.value = '';
-      goalInput.style.height = 'auto';
-      await loadAllTasks();
-      showToast(`✅ ${data.subtasks.length}개 태스크로 분해됐어요!`);
-    } catch (err) {
-      document.getElementById('loading-section').style.display = 'none';
-      document.getElementById('error-text').textContent = `Copilot 오류: ${err.message}`;
-      document.getElementById('error-section').style.display = 'block';
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = '<span>⚡</span> 분해하기';
-    }
+function showPage(page, navEl, bnavId) {
+  closeDrawer();
+  // 사이드바 active
+  document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl && navEl.closest('.sidebar')) navEl.classList.add('active');
+  else {
+    const sidebarItems = [...document.querySelectorAll('.sidebar .nav-item')];
+    const match = sidebarItems.find(n => n.textContent.trim().includes(pageTitles[page]?.split(' ')[0] || ''));
+    if (match) match.classList.add('active');
   }
+  // 하단 네비 active
+  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+  const bnavMap = { home:'bnav-home', team:'bnav-team', heatmap:'bnav-heatmap', premises:'bnav-premises', insight:'bnav-insight', history:'bnav-home' };
+  const bnavEl = document.getElementById(bnavId || bnavMap[page]);
+  if (bnavEl) bnavEl.classList.add('active');
 
-  function renderResult(data) {
-    const badge = document.getElementById('result-goal-badge');
-    badge.textContent = data.goal.length > 20 ? data.goal.slice(0, 20) + '…' : data.goal;
-    document.getElementById('result-count').textContent = `${data.subtasks.length}개`;
+  const title = pageTitles[page] || page;
+  if (document.getElementById('page-title')) document.getElementById('page-title').textContent = title;
+  if (document.getElementById('mobile-page-title')) document.getElementById('mobile-page-title').textContent = title;
 
-    const list = document.getElementById('result-list');
-    list.innerHTML = '';
-    data.subtasks.forEach((t, i) => {
-      list.innerHTML += taskCardHTML({ title: t.title, detail: t.detail, priority: t.priority, status: 'todo' }, null, i * 60);
-    });
-    document.getElementById('result-section').style.display = 'block';
-    document.getElementById('result-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
+  const pages = { home: renderHome, history: renderHistory, insight: renderInsight, team: renderTeam, heatmap: renderHeatmap, premises: renderPremises };
+  const fn = pages[page];
+  if (fn) fn();
+}
 
-  // ── All tasks ──
-  async function loadAllTasks() {
-    try {
-      const res = await fetch(`${API}/tasks/`);
-      allTasks = await res.json();
-      updateTaskCount();
-      renderAllTasks();
-    } catch (e) {
-      console.error('태스크 로드 실패:', e);
-    }
-  }
+// ── Helpers ────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function relationTag(rel) {
+  if (rel === 'initiative') return `<span class="tag tag-initiative">🚀 이니셔티브</span>`;
+  if (rel === 'goal') return `<span class="tag tag-goal">🎯 목표</span>`;
+  return `<span class="tag tag-none">— 미분류</span>`;
+}
 
-  function updateTaskCount() {
-    const todo = allTasks.filter(t => t.status !== 'done').length;
-    document.getElementById('task-count').textContent = `${todo} tasks`;
-  }
+// ── AI Recommendation ──────────────────────────────────────────────────────
+const AI_SUGGESTIONS = [
+  { title:'DML 자동화 진행 현황 문서 업데이트', premise_type:'initiative', premise:'반복 업무 자동화' },
+  { title:'슬랙 답장 봇 테스트 케이스 작성', premise_type:'goal', premise:'매일 답장 자동화' },
+  { title:'결제 오류 패턴 분석 보고서 작성', premise_type:'goal', premise:'결제 오류 알림' },
+  { title:'팀 자동화 스크립트 코드 리뷰', premise_type:'initiative', premise:'반복 업무 자동화' },
+];
 
-  function setFilter(f, el) {
-    currentFilter = f;
-    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-    renderAllTasks();
-  }
+function showAiRecommend() {
+  const box = document.getElementById('ai-recommend-box');
+  if (!box) return;
+  const picks = AI_SUGGESTIONS.slice(0, 2);
+  box.innerHTML = `
+    <div class="ai-recommend-label">✨ AI 추천 — 급한 아젠다 기반</div>
+    ${picks.map(s => `
+      <div class="ai-recommend-item" onclick="useRecommend('${esc(s.title)}')">
+        <span class="recommend-badge ${s.premise_type==='initiative'?'badge-initiative':'badge-goal'}">${s.premise_type==='initiative'?'이니셔티브':'목표'}</span>
+        <span style="flex:1;min-width:0;word-break:break-word">${esc(s.title)}</span>
+        <span style="color:var(--text-03);font-size:11px;flex-shrink:0">${esc(s.premise)}</span>
+      </div>
+    `).join('')}
+  `;
+  box.classList.add('show');
+}
 
-  function renderAllTasks() {
-    const filtered = currentFilter === 'all' ? allTasks
-      : currentFilter === 'done' ? allTasks.filter(t => t.status === 'done')
-      : allTasks.filter(t => t.status !== 'done');
+function useRecommend(title) {
+  const input = document.getElementById('todo-input-main');
+  if (input) { input.value = title; input.focus(); }
+  document.getElementById('ai-recommend-box')?.classList.remove('show');
+  showToast('💡 AI 추천을 선택했어요!');
+}
 
-    const container = document.getElementById('all-tasks-list');
-    if (filtered.length === 0) {
-      const msgs = {
-        all: ['💭', '아직 태스크가 없어요.<br>목표를 입력해 Copilot에게 맡겨보세요!'],
-        todo: ['🎉', '미완료 태스크가 없어요!<br>모든 작업을 완료했네요 🏆'],
-        done: ['📭', '완료된 태스크가 없어요.<br>열심히 해봐요!']
-      };
-      const [emoji, msg] = msgs[currentFilter];
-      container.innerHTML = `<div class="empty-state"><div class="emoji">${emoji}</div><p>${msg}</p></div>`;
-      return;
-    }
+function onTodoInput(val) {
+  if (val) document.getElementById('ai-recommend-box')?.classList.remove('show');
+}
 
-    container.innerHTML = filtered.map((t, i) => taskCardHTML(t, t.id, i * 40)).join('');
-  }
+// ── Home Page ─────────────────────────────────────────────────────────────
+function renderHome() {
+  const todayTodos = todos.filter(t => t.status !== 'done');
+  const doneTodos = todos.filter(t => t.status === 'done');
+  const focusTodo = todos.find(t => t.analysis?.relation === 'initiative' && t.status !== 'done') || todos.find(t => t.status !== 'done');
 
-  function taskCardHTML(t, id, delay = 0) {
-    const isDone = t.status === 'done';
-    const badge = { high: '🔴 높음', medium: '🟠 중간', low: '🟢 낮음' }[t.priority] || t.priority;
-    const badgeClass = { high: 'badge-high', medium: 'badge-medium', low: 'badge-low' }[t.priority] || 'badge-medium';
-    const actions = id ? `
-      <div class="task-actions">
-        <button class="btn-icon delete" onclick="deleteTask(${id})" title="삭제">🗑️</button>
-      </div>` : '';
+  document.getElementById('content-area').innerHTML = `
+    ${focusTodo ? `
+    <div class="focus-card">
+      <div class="focus-label">🎯 오늘 집중할 1가지 (AI 추천)</div>
+      <div class="focus-title">${esc(focusTodo.title)}</div>
+      <div class="focus-reason">${focusTodo.analysis?.relation==='initiative'?'이니셔티브 기여도가 높은 작업입니다':'지금 가장 중요한 작업이에요'}</div>
+    </div>` : ''}
 
-    return `
-      <div class="task-card ${isDone ? 'done' : ''}" style="animation-delay:${delay}ms" id="task-card-${id || ''}">
-        <div class="task-check ${isDone ? 'checked' : ''}" onclick="${id ? `toggleTask(${id})` : ''}"></div>
-        <div class="task-body">
-          <div class="task-title">${escapeHTML(t.title)}</div>
-          ${t.detail ? `<div class="task-detail">${escapeHTML(t.detail)}</div>` : ''}
-          <div class="task-footer">
-            <span class="badge ${badgeClass}">${badge}</span>
-            ${isDone ? '<span class="badge badge-done">✓ 완료</span>' : ''}
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">📝 오늘의 할일 <span style="font-size:12px;color:var(--text-03);font-weight:400">${todayTodos.length}개 남음</span></div>
+            <button onclick="triggerAnalysis()" style="background:var(--purple-bg);color:var(--purple);border:none;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;min-height:32px">⚡ AI 분석</button>
+          </div>
+          <div class="card-body">
+            <div id="ai-recommend-box" class="ai-recommend-box"></div>
+            <div class="todo-input-area">
+              <div class="todo-input-row">
+                <input id="todo-input-main" class="todo-input" placeholder="할일 입력... (Enter로 추가)"
+                  onkeydown="if(event.key==='Enter')addTodo()"
+                  oninput="onTodoInput(this.value)" autocomplete="off" />
+                <button class="btn-add" onclick="addTodo()">추가</button>
+              </div>
+              <button onclick="showAiRecommend()" style="background:none;border:none;font-size:12px;color:var(--purple);cursor:pointer;display:flex;align-items:center;gap:4px;padding:4px 0;min-height:36px">
+                ✨ AI 추천 받기
+              </button>
+            </div>
+            <div class="todo-list" id="todo-list-active">
+              ${todayTodos.length ? todayTodos.map(todoHTML).join('') : `<div class="empty"><div class="emoji">✍️</div><p>오늘의 할일을 추가해보세요!</p></div>`}
+            </div>
+            ${doneTodos.length ? `
+            <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+              <div style="font-size:12px;font-weight:600;color:var(--text-03);margin-bottom:8px">✅ 완료 (${doneTodos.length})</div>
+              <div class="todo-list">${doneTodos.map(todoHTML).join('')}</div>
+            </div>` : ''}
           </div>
         </div>
-        ${actions}
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📈 오늘의 기여도</div></div>
+          <div class="card-body">${contributionStats()}</div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🎯 현재 목표</div>
+            <button onclick="showPage('premises')" style="background:none;border:none;font-size:12px;color:var(--primary);cursor:pointer;min-height:32px">전체 보기</button>
+          </div>
+          <div class="card-body" style="padding:12px">
+            ${premises.filter(p=>p.is_active).slice(0,3).map(p=>`
+              <div style="padding:10px;background:var(--bg-02);border-radius:8px;margin-bottom:6px">
+                <span class="premise-type-badge ${p.type==='initiative'?'premise-initiative':'premise-goal'}">${p.type==='initiative'?'이니셔티브':'목표'}</span>
+                <div style="font-size:13px;font-weight:600">${esc(p.title)}</div>
+              </div>
+            `).join('') || '<div style="font-size:13px;color:var(--text-03)">설정된 목표가 없어요</div>'}
+            <div class="decompose-box">
+              <div class="decompose-title">🤖 소전제로 Todo 자동 생성</div>
+              <select id="premise-select" style="width:100%;border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:14px;margin-bottom:8px;min-height:44px;background:white">
+                <option value="">소전제 선택...</option>
+                ${premises.filter(p=>p.type==='goal'&&p.is_active).map(p=>`<option value="${p.id}">${esc(p.title)}</option>`).join('')}
+              </select>
+              <button onclick="decomposeFromPremise()" style="background:var(--purple);color:white;border:none;border-radius:6px;padding:9px 14px;font-size:13px;font-weight:700;cursor:pointer;width:100%;min-height:44px">
+                ⚡ Copilot으로 분해하기
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function todoHTML(t) {
+  const rel = t.analysis?.relation;
+  return `
+    <div class="todo-item ${t.status==='done'?'done':''}" id="ti-${t.id}">
+      <div class="todo-check ${t.status==='done'?'checked':''}" onclick="toggleTodo(${t.id})"></div>
+      <div class="todo-body">
+        <div class="todo-title">${esc(t.title)}</div>
+        <div class="todo-meta">
+          ${rel ? relationTag(rel) : `<span class="tag tag-pending">분석 대기</span>`}
+        </div>
+      </div>
+      <div class="todo-actions">
+        <button class="btn-icon del" onclick="deleteTodo(${t.id})">🗑</button>
+      </div>
+    </div>`;
+}
+
+function contributionStats() {
+  const total = todos.length;
+  const initiative = todos.filter(t=>t.analysis?.relation==='initiative').length;
+  const goal_cnt = todos.filter(t=>t.analysis?.relation==='goal').length;
+  const done = todos.filter(t=>t.status==='done').length;
+  const initiativePct = total ? Math.round(initiative/total*100) : 0;
+  const donePct = total ? Math.round(done/total*100) : 0;
+  return `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;color:var(--text-02)">완료율</span>
+          <span style="font-size:13px;font-weight:700">${done}/${total}</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${donePct}%"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;color:var(--text-02)">🎯 이니셔티브 기여</span>
+          <span style="font-size:13px;font-weight:700;color:var(--primary)">${initiativePct}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${initiativePct}%;background:var(--primary)"></div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+        <span class="tag tag-initiative">${initiative} 이니셔티브 연관</span>
+        <span class="tag tag-goal">${goal_cnt} 목표 연관</span>
+      </div>
+    </div>`;
+}
+
+async function addTodo() {
+  const input = document.getElementById('todo-input-main');
+  const title = input?.value.trim();
+  if (!title) { showToast('할일을 입력해주세요!'); return; }
+  const newTodo = { id: Date.now(), user_id: currentUser.id, title, status:'todo', todo_date: new Date().toISOString().slice(0,10), analysis: null };
+  todos.unshift(newTodo);
+  input.value = '';
+  renderHome();
+  showToast('✅ 추가됐어요!');
+}
+
+async function toggleTodo(id) {
+  const t = todos.find(x => x.id === id);
+  if (!t) return;
+  t.status = t.status === 'done' ? 'todo' : 'done';
+  renderHome();
+  showToast(t.status === 'done' ? '✅ 완료!' : '↩️ 미완료로 변경');
+}
+
+async function deleteTodo(id) {
+  todos = todos.filter(t => t.id !== id);
+  renderHome();
+  showToast('🗑️ 삭제됐어요');
+}
+
+async function triggerAnalysis() {
+  showToast('⚡ AI 분석 중...');
+  setTimeout(() => {
+    todos.forEach(t => {
+      if (!t.analysis) {
+        const rels = ['initiative','goal','none'];
+        t.analysis = { relation: rels[Math.floor(Math.random()*3)], confidence: Math.random() };
+      }
+    });
+    renderHome();
+    showToast('✨ AI 분석 완료!');
+  }, 1500);
+}
+
+async function decomposeFromPremise() {
+  const sel = document.getElementById('premise-select');
+  if (!sel?.value) { showToast('소전제를 선택해주세요'); return; }
+  const premise = premises.find(p => p.id === parseInt(sel.value));
+  if (!premise) return;
+  showToast('🤖 Copilot이 분해 중...');
+  setTimeout(() => {
+    const generated = [
+      `${premise.title} 관련 리서치 정리`,
+      `${premise.title} 액션 플랜 작성`,
+      `${premise.title} 진행상황 팀 공유`,
+    ];
+    generated.forEach(title => {
+      todos.unshift({ id: Date.now() + Math.random(), user_id: currentUser.id, title, status:'todo', todo_date: new Date().toISOString().slice(0,10), analysis: { relation:'goal', confidence:0.88 } });
+    });
+    renderHome();
+    showToast(`✨ ${generated.length}개 태스크가 생성됐어요!`);
+  }, 1800);
+}
+
+// ── History Page ──────────────────────────────────────────────────────────
+function renderHistory() {
+  const done = todos.filter(t => t.status === 'done');
+  document.getElementById('content-area').innerHTML = `
+    <div class="card">
+      <div class="card-header"><div class="card-title">📚 완료된 할일 히스토리</div></div>
+      <div class="card-body">
+        ${done.length ? done.map(t => `
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:16px;flex-shrink:0">✅</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:14px;font-weight:500;word-break:break-word">${esc(t.title)}</div>
+              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">${t.analysis ? relationTag(t.analysis.relation) : ''}</div>
+            </div>
+            <button onclick="restoreTodo(${t.id})" style="background:var(--bg-02);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;flex-shrink:0;min-height:36px">복원</button>
+          </div>
+        `).join('') : `<div class="empty"><div class="emoji">📭</div><p>완료된 할일이 없어요</p></div>`}
+      </div>
+    </div>`;
+}
+
+function restoreTodo(id) {
+  const t = todos.find(x => x.id === id);
+  if (t) { t.status = 'todo'; renderHistory(); showToast('↩️ 복원됐어요!'); }
+}
+
+// ── Insight Page ──────────────────────────────────────────────────────────
+function renderInsight() {
+  const total = todos.length;
+  const initiative = todos.filter(t=>t.analysis?.relation==='initiative').length;
+  const goal_cnt = todos.filter(t=>t.analysis?.relation==='goal').length;
+  const none = todos.filter(t=>t.analysis?.relation==='none').length;
+  const done = todos.filter(t=>t.status==='done').length;
+
+  document.getElementById('content-area').innerHTML = `
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📊 주간 요약</div></div>
+        <div class="card-body">
+          <div class="insight-stat"><div><div class="insight-label">총 할일</div></div><div class="insight-value">${total}개</div></div>
+          <div class="insight-stat">
+            <div><div class="insight-label">완료율</div><div class="progress-bar" style="width:100px;margin-top:4px"><div class="progress-fill" style="width:${total?done/total*100:0}%"></div></div></div>
+            <div class="insight-value" style="color:var(--low)">${total?Math.round(done/total*100):0}%</div>
+          </div>
+          <div class="insight-stat">
+            <div><div class="insight-label">🎯 이니셔티브 기여율</div><div class="progress-bar" style="width:100px;margin-top:4px"><div class="progress-fill" style="width:${total?initiative/total*100:0}%;background:var(--primary)"></div></div></div>
+            <div class="insight-value" style="color:var(--primary)">${total?Math.round(initiative/total*100):0}%</div>
+          </div>
+          <div class="insight-stat">
+            <div><div class="insight-label">📌 목표 기여율</div><div class="progress-bar" style="width:100px;margin-top:4px"><div class="progress-fill" style="width:${total?goal_cnt/total*100:0}%;background:var(--blue)"></div></div></div>
+            <div class="insight-value" style="color:var(--blue)">${total?Math.round(goal_cnt/total*100):0}%</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">💡 AI 인사이트</div></div>
+        <div class="card-body">
+          ${none > total*0.5 ? `
+            <div style="background:var(--high-bg);border:1px solid var(--high);border-radius:8px;padding:12px;margin-bottom:12px">
+              <div style="font-size:13px;font-weight:700;color:var(--high);margin-bottom:4px">⚠️ 주의</div>
+              <div style="font-size:13px;color:var(--text-02)">이번 주 할일의 ${Math.round(none/total*100)}%가 대/소 전제와 무관합니다. 목표 정렬이 필요해요!</div>
+            </div>
+          ` : `
+            <div style="background:var(--low-bg);border:1px solid var(--low);border-radius:8px;padding:12px;margin-bottom:12px">
+              <div style="font-size:13px;font-weight:700;color:var(--low);margin-bottom:4px">🎉 Good</div>
+              <div style="font-size:13px;color:var(--text-02)">이번 주 할일의 ${total?Math.round((initiative+goal_cnt)/total*100):0}%가 팀 목표에 기여하고 있어요!</div>
+            </div>
+          `}
+          <div style="font-size:13px;color:var(--text-02);line-height:1.8">
+            📌 <strong>목표 정렬</strong>: 대전제 ${initiative}개, 소전제 ${goal_cnt}개 기여<br>
+            📋 <strong>미분류</strong>: ${none}개의 할일이 목표와 연결되지 않았어요<br>
+            ✅ <strong>완료</strong>: ${done}/${total}개 완료
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── Team Dashboard ────────────────────────────────────────────────────────
+function renderTeam() {
+  document.getElementById('content-area').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">👥 팀 오늘 현황</div>
+        <div style="font-size:12px;color:var(--text-03)">${teamMembers.filter(m=>m.total===0).length>0?`⚠️ ${teamMembers.filter(m=>m.total===0).length}명 미작성`:'모두 작성 완료 ✅'}</div>
+      </div>
+      <div class="card-body">
+        ${teamMembers.map(m => `
+          <div class="member-row">
+            <div class="member-avatar">${m.avatar_url?`<img src="${m.avatar_url}"/>`:(m.username[0]||'?').toUpperCase()}</div>
+            <div class="member-info">
+              <div class="member-name">${esc(m.username)}</div>
+              <div class="member-todo-count">${m.total>0?`${m.done}/${m.total} 완료`:'미작성'}</div>
+              ${m.total>0?`<div class="progress-bar" style="width:100%;max-width:140px;margin-top:4px"><div class="progress-fill" style="width:${m.total?m.done/m.total*100:0}%"></div></div>`:''}
+            </div>
+            <div class="member-badges">
+              ${m.total===0?`<span class="not-submitted">미작성</span>`:''}
+              ${m.initiative_related>0?`<span class="count-badge cb-initiative">${m.initiative_related} 대전제</span>`:''}
+              ${m.goal_related>0?`<span class="count-badge cb-goal">${m.goal_related} 소전제</span>`:''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+}
+
+// ── Heatmap ────────────────────────────────────────────────────────────────
+let selectedPremiseId = null;
+const contributionMatrix = {
+  1: { 1:2, 2:1, 3:0, 4:1 },
+  2: { 1:1, 2:0, 3:0, 4:2 },
+  3: { 1:2, 2:3, 3:0, 4:0 },
+  4: { 1:1, 2:0, 3:0, 4:0 },
+  5: { 1:0, 2:0, 3:2, 4:0 },
+};
+
+function renderHeatmap() {
+  selectedPremiseId = selectedPremiseId || (premises[0]?.id ?? null);
+  const members = teamMembers;
+  const matrix = selectedPremiseId ? (contributionMatrix[selectedPremiseId] || {}) : {};
+  const maxVal = Math.max(1, ...Object.values(matrix));
+
+  function heatLevel(count) {
+    if (count === 0) return 0;
+    return Math.ceil((count / maxVal) * 4);
+  }
+
+  document.getElementById('content-area').innerHTML = `
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-03);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.6px">카테고리(전제) 선택</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${premises.map(p => `
+          <button onclick="selectPremiseHeatmap(${p.id})"
+            style="padding:7px 14px;border-radius:20px;border:1.5px solid ${selectedPremiseId===p.id?(p.type==='initiative'?'var(--primary)':'var(--blue)'):'var(--border)'};
+            background:${selectedPremiseId===p.id?(p.type==='initiative'?'var(--primary-bg)':'var(--blue-bg)'):'white'};
+            color:${selectedPremiseId===p.id?(p.type==='initiative'?'var(--primary)':'var(--blue)'):'var(--text-02)'};
+            font-size:12px;font-weight:${selectedPremiseId===p.id?700:400};cursor:pointer;min-height:36px;">
+            ${p.type==='initiative'?'🎯':'📌'} ${esc(p.title)}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">🔥 팀원별 기여 현황</div>
+          <div style="font-size:12px;color:var(--text-03)">${selectedPremiseId?esc(premises.find(p=>p.id===selectedPremiseId)?.title||''):'전체'}</div>
+        </div>
+        <div class="card-body">
+          ${members.map(m => {
+            const count = matrix[m.user_id] ?? 0;
+            const level = heatLevel(count);
+            const pct = m.total ? Math.round(count/m.total*100) : 0;
+            return `
+              <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+                <div class="member-avatar" style="flex-shrink:0">${m.username[0]||'?'}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(m.username)}</div>
+                  <div style="display:flex;align-items:center;gap:8px">
+                    <div style="flex:1;height:8px;background:var(--bg-03);border-radius:4px;overflow:hidden">
+                      <div style="height:100%;width:${pct}%;background:${level>=3?'var(--primary)':level>=2?'#FF9266':'#FFD4C2'};border-radius:4px;transition:width 0.4s"></div>
+                    </div>
+                    <span style="font-size:12px;font-weight:700;color:${level>=3?'var(--primary)':'var(--text-02)'};width:36px;text-align:right">${count}건</span>
+                  </div>
+                </div>
+              </div>`;
+          }).join('')}
+          <div style="display:flex;gap:6px;align-items:center;margin-top:12px;font-size:11px;color:var(--text-03)">
+            <span>낮음</span>
+            ${[0,1,2,3,4].map(l=>`<div style="width:14px;height:14px;border-radius:3px;background:${l===0?'var(--bg-03)':l===1?'#FFD4C2':l===2?'#FF9266':l===3?'#FF6114':'var(--primary)'}"></div>`).join('')}
+            <span>높음</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">📊 전체 매트릭스</div></div>
+        <div class="card-body" style="padding:12px">
+          <div class="heatmap-table-wrap">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:280px">
+              <thead>
+                <tr>
+                  <th style="text-align:left;padding:6px 8px;color:var(--text-03);font-weight:600;border-bottom:2px solid var(--border)">전제</th>
+                  ${members.map(m=>`<th style="padding:6px 4px;text-align:center;color:var(--text-03);font-weight:600;border-bottom:2px solid var(--border);min-width:44px">${esc(m.username.slice(0,2))}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${premises.map(p => {
+                  const rowData = contributionMatrix[p.id] || {};
+                  return `
+                    <tr style="cursor:pointer" onclick="selectPremiseHeatmap(${p.id})">
+                      <td style="padding:7px 8px;font-size:11px;font-weight:${selectedPremiseId===p.id?700:400};color:${selectedPremiseId===p.id?'var(--primary)':'var(--text-02)'};border-bottom:1px solid var(--border);max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                        ${p.type==='initiative'?'🎯':'📌'} ${esc(p.title.length>10?p.title.slice(0,10)+'…':p.title)}
+                      </td>
+                      ${members.map(m => {
+                        const cnt = rowData[m.user_id] ?? 0;
+                        const lv = heatLevel(cnt);
+                        return `<td style="padding:4px;text-align:center;border-bottom:1px solid var(--border)">
+                          <div style="width:28px;height:28px;border-radius:6px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+                            background:${cnt===0?'var(--bg-03)':lv>=4?'var(--primary)':lv>=3?'#FF6114':lv>=2?'#FF9266':'#FFD4C2'};
+                            color:${cnt===0?'var(--text-03)':'white'}">
+                            ${cnt||''}
+                          </div>
+                        </td>`;
+                      }).join('')}
+                    </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function selectPremiseHeatmap(premiseId) {
+  selectedPremiseId = premiseId;
+  renderHeatmap();
+}
+
+// ── Premises Page ──────────────────────────────────────────────────────────
+function renderPremises() {
+  const initiatives = premises.filter(p => p.type === 'initiative');
+  const goals = premises.filter(p => p.type === 'goal');
+
+  function goalCard(p) {
+    const parent = initiatives.find(i => i.id === p.parent_id);
+    return `
+      <div class="premise-card" id="pc-${p.id}">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+          <span class="premise-type-badge premise-goal">목표</span>
+          ${parent ? `<span style="font-size:11px;color:var(--primary);background:var(--primary-bg);padding:2px 8px;border-radius:10px;font-weight:600">↗ ${esc(parent.title)}</span>` : `<span style="font-size:11px;color:var(--text-03)">연결 없음</span>`}
+        </div>
+        <div class="premise-title">${esc(p.title)}</div>
+        ${p.description ? `<div class="premise-desc">${esc(p.description)}</div>` : ''}
+        <div class="premise-actions" style="align-items:center">
+          <select onchange="mapGoalToInitiative(${p.id}, this.value)"
+            style="flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;background:var(--bg-02);color:var(--text-02);min-height:34px">
+            <option value="">↗ 이니셔티브 연결...</option>
+            ${initiatives.map(i => `<option value="${i.id}" ${p.parent_id===i.id?'selected':''}>${esc(i.title)}</option>`).join('')}
+          </select>
+          <button class="btn-sm ${p.is_active ? 'btn-primary-sm' : 'btn-secondary-sm'}" onclick="togglePremise(${p.id})">${p.is_active ? '활성' : '비활성'}</button>
+          <button class="btn-sm btn-secondary-sm" onclick="deletePremise(${p.id})">삭제</button>
+        </div>
       </div>`;
   }
 
-  async function toggleTask(id) {
-    const task = allTasks.find(t => t.id === id);
-    if (!task) return;
-    const newStatus = task.status === 'done' ? 'todo' : 'done';
-    try {
-      await fetch(`${API}/tasks/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
-      });
-      task.status = newStatus;
-      updateTaskCount();
-      renderAllTasks();
-      showToast(newStatus === 'done' ? '✅ 완료!' : '↩️ 미완료로 변경');
-    } catch (e) {
-      showToast('오류가 발생했어요');
-    }
+  function initiativeCard(p) {
+    const linked = goals.filter(g => g.parent_id === p.id);
+    return `
+      <div class="premise-card">
+        <span class="premise-type-badge premise-initiative">이니셔티브</span>
+        <div class="premise-title">${esc(p.title)}</div>
+        ${p.description ? `<div class="premise-desc">${esc(p.description)}</div>` : ''}
+        ${linked.length ? `
+          <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">
+            ${linked.map(g => `<span style="font-size:11px;background:var(--blue-bg);color:var(--blue);padding:2px 8px;border-radius:10px;font-weight:500">🎯 ${esc(g.title)}</span>`).join('')}
+          </div>` : ''}
+        <div class="premise-actions">
+          <button class="btn-sm ${p.is_active ? 'btn-primary-sm' : 'btn-secondary-sm'}" onclick="togglePremise(${p.id})">${p.is_active ? '활성' : '비활성'}</button>
+          <button class="btn-sm btn-secondary-sm" onclick="deletePremise(${p.id})">삭제</button>
+        </div>
+      </div>`;
   }
 
-  async function deleteTask(id) {
-    if (!confirm('이 태스크를 삭제할까요?')) return;
-    try {
-      await fetch(`${API}/tasks/${id}`, { method: 'DELETE' });
-      allTasks = allTasks.filter(t => t.id !== id);
-      updateTaskCount();
-      renderAllTasks();
-      showToast('🗑️ 삭제됐어요');
-    } catch (e) {
-      showToast('삭제 중 오류가 발생했어요');
+  document.getElementById('content-area').innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button onclick="openPremiseModal('initiative')" style="background:var(--primary);color:white;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">+ 이니셔티브 추가</button>
+      <button onclick="openPremiseModal('goal')" style="background:var(--blue);color:white;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;min-height:44px">+ 목표 추가</button>
+    </div>
+
+    <!-- 이니셔티브 × 목표 계층 맵 -->
+    ${initiatives.length ? `
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <div class="card-title">🗺 이니셔티브 → 목표 연결 맵</div>
+        <span style="font-size:12px;color:var(--text-03)">목표 카드에서 이니셔티브를 선택하세요</span>
+      </div>
+      <div class="card-body" style="padding:14px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          ${initiatives.map(i => {
+            const linked = goals.filter(g => g.parent_id === i.id);
+            return `
+              <div style="display:flex;align-items:flex-start;gap:10px">
+                <div style="background:var(--primary-bg);border:1.5px solid var(--primary-border);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:700;color:var(--primary);min-width:160px;max-width:180px;flex-shrink:0">
+                  🚀 ${esc(i.title)}
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-top:6px">
+                  ${linked.length ? linked.map(g => `
+                    <div style="background:var(--blue-bg);border:1px solid #c7d9f8;border-radius:8px;padding:5px 10px;font-size:12px;color:var(--blue);font-weight:500">
+                      🎯 ${esc(g.title)}
+                    </div>`).join('') : `<span style="font-size:12px;color:var(--text-03)">연결된 목표 없음</span>`}
+                </div>
+              </div>`;
+          }).join('')}
+          ${goals.filter(g => !g.parent_id).length ? `
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <div style="background:var(--bg-03);border:1.5px dashed var(--border);border-radius:8px;padding:7px 12px;font-size:13px;font-weight:600;color:var(--text-03);min-width:160px;max-width:180px;flex-shrink:0">
+                미연결
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-top:6px">
+                ${goals.filter(g => !g.parent_id).map(g => `
+                  <div style="background:var(--bg-02);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:12px;color:var(--text-02)">
+                    🎯 ${esc(g.title)}
+                  </div>`).join('')}
+              </div>
+            </div>` : ''}
+        </div>
+      </div>
+    </div>` : ''}
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">🚀 이니셔티브</div><span style="font-size:12px;color:var(--text-03)">${initiatives.length}개</span></div>
+        <div class="card-body">
+          <div class="premise-list">
+            ${initiatives.map(initiativeCard).join('') || '<div class="empty"><div class="emoji">🚀</div><p>이니셔티브를 추가해보세요</p></div>'}
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">🎯 목표</div><span style="font-size:12px;color:var(--text-03)">${goals.length}개</span></div>
+        <div class="card-body">
+          <div class="premise-list">
+            ${goals.map(goalCard).join('') || '<div class="empty"><div class="emoji">🎯</div><p>목표를 추가해보세요</p></div>'}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function mapGoalToInitiative(goalId, initiativeId) {
+  const p = premises.find(x => x.id === goalId);
+  if (!p) return;
+  p.parent_id = initiativeId ? parseInt(initiativeId) : null;
+  renderPremises();
+  const iName = initiativeId ? premises.find(x => x.id === parseInt(initiativeId))?.title : null;
+  showToast(iName ? `🔗 "${iName}"에 연결됐어요!` : '🔗 연결이 해제됐어요');
+}
+
+function openPremiseModal(type) {
+  const existing = document.getElementById('premise-modal');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'premise-modal';
+  overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
+
+  const initiatives = premises.filter(p => p.type === 'initiative');
+  const parentSelect = type === 'goal' && initiatives.length ? `
+    <div class="modal-field">
+      <label class="modal-label">이니셔티브 연결 (선택)</label>
+      <select class="modal-input" id="pm-parent" style="min-height:44px">
+        <option value="">연결 없음</option>
+        ${initiatives.map(i => `<option value="${i.id}">${esc(i.title)}</option>`).join('')}
+      </select>
+    </div>` : '';
+
+  overlay.innerHTML = `
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-title">${type === 'initiative' ? '🚀 이니셔티브' : '🎯 목표'} 추가</div>
+      <div class="modal-field">
+        <label class="modal-label">제목</label>
+        <input class="modal-input" id="pm-title" placeholder="${type === 'initiative' ? '예: 반복 업무 자동화하기' : '예: DML 처리 자동화'}" autocomplete="off" />
+      </div>
+      <div class="modal-field">
+        <label class="modal-label">설명 (선택)</label>
+        <input class="modal-input" id="pm-desc" placeholder="구체적인 목표나 기준" autocomplete="off" />
+      </div>
+      ${parentSelect}
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">취소</button>
+        <button class="btn-confirm" onclick="savePremise('${type}')">저장</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(() => document.getElementById('pm-title')?.focus(), 100);
+}
+
+function savePremise(type) {
+  const title = document.getElementById('pm-title')?.value.trim();
+  if (!title) { showToast('제목을 입력해주세요'); return; }
+  const parentId = document.getElementById('pm-parent')?.value
+    ? parseInt(document.getElementById('pm-parent').value) : null;
+  premises.push({
+    id: Date.now(), type, title,
+    description: document.getElementById('pm-desc')?.value || '',
+    team_id: currentUser.team_id, parent_id: parentId, is_active: 1,
+  });
+  closeModal();
+  renderPremises();
+  showToast(`✅ ${type === 'initiative' ? '이니셔티브' : '목표'}가 추가됐어요!`);
+}
+
+function togglePremise(id) {
+  const p = premises.find(x=>x.id===id);
+  if (p) { p.is_active = p.is_active ? 0 : 1; renderPremises(); }
+}
+
+function deletePremise(id) {
+  premises = premises.filter(p=>p.id!==id);
+  renderPremises();
+  showToast('🗑️ 삭제됐어요');
+}
+
+function closeModal() { document.getElementById('premise-modal')?.remove(); }
+
+// ── 디버그 패널 (localhost 전용) ──────────────────────────────────────────
+let debugPanelTeam = 1;
+
+function debugPanelInit() {
+  if (document.getElementById('debug-panel')) return;
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #debug-panel {
+      position: fixed; bottom: 20px; left: 16px; z-index: 9999;
+      background: rgba(15, 17, 23, 0.96); backdrop-filter: blur(12px);
+      border: 1px solid rgba(248,81,0,0.35); border-radius: 14px;
+      padding: 12px 14px; width: 226px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      font-family: -apple-system, sans-serif;
+      transition: transform 0.2s, opacity 0.2s;
     }
-  }
-
-  // ── Speech / mic ──
-  let mediaRecorder = null;
-  let audioChunks = [];
-
-  async function toggleMic() {
-    const btn = document.getElementById('mic-btn');
-    if (mediaRecorder && mediaRecorder.state === 'recording') {
-      mediaRecorder.stop();
-      btn.classList.remove('recording');
-      btn.title = '음성 입력';
-      return;
+    #debug-panel.collapsed { transform: translateY(calc(100% - 36px)); }
+    #debug-panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px; cursor: pointer; user-select: none;
     }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioChunks = [];
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-      mediaRecorder.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop());
-        const blob = new Blob(audioChunks, { type: 'audio/wav' });
-        await sendAudio(blob);
-      };
-      mediaRecorder.start();
-      btn.classList.add('recording');
-      btn.title = '녹음 중... 클릭해서 중지';
-      showToast('🎙️ 녹음 중... 다시 클릭하면 완료');
-    } catch (e) {
-      showToast('마이크 권한이 필요해요');
+    #debug-panel-header .dp-title {
+      font-size: 11px; font-weight: 700; color: #f85100;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      display: flex; align-items: center; gap: 5px;
     }
-  }
-
-  async function sendAudio(blob) {
-    showToast('🔍 음성 인식 중...');
-    const formData = new FormData();
-    formData.append('file', blob, 'recording.wav');
-    try {
-      const res = await fetch(`${API}/speech/transcribe`, { method: 'POST', body: formData });
-      const data = await res.json();
-      if (data.success && data.text) {
-        goalInput.value = data.text;
-        goalInput.dispatchEvent(new Event('input'));
-        showToast(`📝 "${data.text}"`);
-      } else {
-        showToast('음성을 인식하지 못했어요');
-      }
-    } catch (e) {
-      showToast('음성 인식 서비스 연결 실패');
+    #debug-panel-header .dp-badge {
+      font-size: 9px; background: rgba(248,81,0,0.2); color: #f85100;
+      padding: 2px 6px; border-radius: 10px; border: 1px solid rgba(248,81,0,0.3);
     }
-  }
+    #debug-panel-header .dp-toggle { color: #555; font-size: 14px; }
+    .dp-teams {
+      display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px;
+    }
+    .dp-team-btn {
+      font-size: 11px; padding: 4px 9px; border-radius: 20px; cursor: pointer;
+      border: 1px solid #2a2e3a; background: #1a1e2a; color: #8b949e;
+      transition: all 0.15s; font-weight: 500;
+    }
+    .dp-team-btn.active { background: rgba(248,81,0,0.15); color: #f85100; border-color: rgba(248,81,0,0.4); font-weight: 700; }
+    .dp-members { display: flex; flex-direction: column; gap: 3px; }
+    .dp-member-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 8px; border-radius: 8px; cursor: pointer;
+      border: 1px solid transparent; background: transparent;
+      text-align: left; width: 100%; transition: background 0.15s;
+    }
+    .dp-member-btn:hover { background: rgba(255,255,255,0.05); }
+    .dp-member-btn.active { background: rgba(248,81,0,0.1); border-color: rgba(248,81,0,0.3); }
+    .dp-avatar { width: 24px; height: 24px; border-radius: 50%; background: #2a2e3a; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+    .dp-info { flex: 1; min-width: 0; }
+    .dp-name { font-size: 12px; font-weight: 600; color: #e6edf3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .dp-role { font-size: 10px; color: #555; }
+    .dp-cur { font-size: 10px; color: #f85100; margin-left: auto; flex-shrink: 0; }
+  `;
+  document.head.appendChild(style);
 
-  function escapeHTML(str) {
-    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  const panel = document.createElement('div');
+  panel.id = 'debug-panel';
+  panel.innerHTML = `
+    <div id="debug-panel-header" onclick="debugToggleCollapse()">
+      <div class="dp-title">🛠 <span>Dev Panel</span> <span class="dp-badge">LOCAL</span></div>
+      <span class="dp-toggle" id="dp-toggle-icon">▾</span>
+    </div>
+    <div id="debug-panel-body">
+      <div class="dp-teams" id="dp-teams"></div>
+      <div class="dp-members" id="dp-members"></div>
+    </div>
+  `;
+  document.body.appendChild(panel);
+  debugPanelRender();
+}
 
-  // ── Init ──
-  loadAllTasks();
+function debugToggleCollapse() {
+  const panel = document.getElementById('debug-panel');
+  const icon = document.getElementById('dp-toggle-icon');
+  panel.classList.toggle('collapsed');
+  icon.textContent = panel.classList.contains('collapsed') ? '▴' : '▾';
+}
+
+function debugPanelRender() {
+  const teamsEl = document.getElementById('dp-teams');
+  const membersEl = document.getElementById('dp-members');
+  if (!teamsEl || !membersEl) return;
+
+  teamsEl.innerHTML = DEMO_TEAMS.map(t => `
+    <button class="dp-team-btn ${t.id === debugPanelTeam ? 'active' : ''}"
+      onclick="debugSelectTeam(${t.id})">${t.name}</button>
+  `).join('');
+
+  const members = DEMO_USERS.filter(u => u.team_id === debugPanelTeam);
+  membersEl.innerHTML = members.map(u => `
+    <button class="dp-member-btn ${u.id === currentUser?.id ? 'active' : ''}"
+      onclick="switchDemoUser(${u.id})">
+      <div class="dp-avatar">${u.emoji}</div>
+      <div class="dp-info">
+        <div class="dp-name">${u.name}</div>
+        <div class="dp-role">${u.role === 'leader' ? '👑 팀장' : '팀원'}</div>
+      </div>
+      ${u.id === currentUser?.id ? '<span class="dp-cur">● 현재</span>' : ''}
+    </button>
+  `).join('');
+}
+
+function debugSelectTeam(teamId) {
+  debugPanelTeam = teamId;
+  const firstMember = DEMO_USERS.find(u => u.team_id === teamId);
+  if (firstMember) switchDemoUser(firstMember.id);
+  else debugPanelRender();
+}
+
+// ── Logout ─────────────────────────────────────────────────────────────────
+function logout() {
+  fetch('/auth/logout', { method:'POST', credentials:'include' }).finally(() => location.reload());
+}
 </script>
 </body>
 </html>
