@@ -558,6 +558,7 @@ let premises = [];
 let teamMembers = [];
 let auditDecisions = null;
 let mailPreviewUser = null;
+let selectedPremiseId = null;
 window._hitlSettings = { auto_approve_enabled:false, auto_approve_threshold:0.95, notify_on_flag:true, review_required_types:'todo_match,anomaly' };
 const IS_LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
 
@@ -909,7 +910,7 @@ function renderHome() {
       <div class="scrum-row">
         <span class="scrum-icon">✅</span>
         <div>
-          <div class="scrum-label">어제 완료한 일</div>
+          <div class="scrum-label">오늘 완료한 일</div>
           <div class="scrum-value" id="scrum-yesterday">${doneCount}건 완료</div>
         </div>
       </div>
@@ -1110,232 +1111,212 @@ async function decomposeFromPremise() {
   }, 1800);
 }
 
-// ── History Page ──────────────────────────────────────────────────────────
-function renderHistory() {
-  const done = todos.filter(t => t.status === 'done');
-  document.getElementById('content-area').innerHTML = `
-    <div class="card">
-      <div class="card-header"><div class="card-title">📚 완료된 할일 히스토리</div></div>
-      <div class="card-body">
-        ${done.length ? done.map(t => `
-          <div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:16px;flex-shrink:0">✅</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:500;word-break:break-word">${esc(t.title)}</div>
-              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">${t.analysis ? relationTag(t.analysis.relation) : ''}</div>
-            </div>
-            <button onclick="restoreTodo(${t.id})" style="background:var(--bg-02);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;flex-shrink:0;min-height:36px">복원</button>
-          </div>
-        `).join('') : `<div class="empty"><div class="emoji">📭</div><p>완료된 할일이 없어요</p></div>`}
-      </div>
-    </div>`;
-}
-
+// ── History util (복원 기능) ──────────────────────────────────────────────
 function restoreTodo(id) {
   const t = todos.find(x => x.id === id);
-  if (t) { t.status = 'todo'; renderHistory(); showToast('↩️ 복원됐어요!'); }
-}
-
-// ── Insight Page ──────────────────────────────────────────────────────────
-function renderInsight() {
-  const total = todos.length;
-  const initiative = todos.filter(t=>t.analysis?.relation==='initiative').length;
-  const goal_cnt = todos.filter(t=>t.analysis?.relation==='goal').length;
-  const none = todos.filter(t=>t.analysis?.relation==='none').length;
-  const done = todos.filter(t=>t.status==='done').length;
-
-  document.getElementById('content-area').innerHTML = `
-    <div class="grid-2">
-      <div class="card">
-        <div class="card-header"><div class="card-title">📊 주간 요약</div></div>
-        <div class="card-body">
-          <div class="insight-stat"><div><div class="insight-label">총 할일</div></div><div class="insight-value">${total}개</div></div>
-          <div class="insight-stat">
-            <div><div class="insight-label">완료율</div><div class="progress-bar" style="width:100px;margin-top:4px"><div class="progress-fill" style="width:${total?done/total*100:0}%"></div></div></div>
-            <div class="insight-value" style="color:var(--low)">${total?Math.round(done/total*100):0}%</div>
-          </div>
-          <div class="insight-stat">
-            <div><div class="insight-label">🎯 이니셔티브 기여율</div><div class="progress-bar" style="width:100px;margin-top:4px"><div class="progress-fill" style="width:${total?initiative/total*100:0}%;background:var(--primary)"></div></div></div>
-            <div class="insight-value" style="color:var(--primary)">${total?Math.round(initiative/total*100):0}%</div>
-          </div>
-          <div class="insight-stat">
-            <div><div class="insight-label">📌 목표 기여율</div><div class="progress-bar" style="width:100px;margin-top:4px"><div class="progress-fill" style="width:${total?goal_cnt/total*100:0}%;background:var(--blue)"></div></div></div>
-            <div class="insight-value" style="color:var(--blue)">${total?Math.round(goal_cnt/total*100):0}%</div>
-          </div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">💡 AI 인사이트</div></div>
-        <div class="card-body">
-          ${none > total*0.5 ? `
-            <div style="background:var(--high-bg);border:1px solid var(--high);border-radius:8px;padding:12px;margin-bottom:12px">
-              <div style="font-size:13px;font-weight:700;color:var(--high);margin-bottom:4px">⚠️ 주의</div>
-              <div style="font-size:13px;color:var(--text-02)">이번 주 할일의 ${Math.round(none/total*100)}%가 대/소 전제와 무관합니다. 목표 정렬이 필요해요!</div>
-            </div>
-          ` : `
-            <div style="background:var(--low-bg);border:1px solid var(--low);border-radius:8px;padding:12px;margin-bottom:12px">
-              <div style="font-size:13px;font-weight:700;color:var(--low);margin-bottom:4px">🎉 Good</div>
-              <div style="font-size:13px;color:var(--text-02)">이번 주 할일의 ${total?Math.round((initiative+goal_cnt)/total*100):0}%가 팀 목표에 기여하고 있어요!</div>
-            </div>
-          `}
-          <div style="font-size:13px;color:var(--text-02);line-height:1.8">
-            📌 <strong>목표 정렬</strong>: 대전제 ${initiative}개, 소전제 ${goal_cnt}개 기여<br>
-            📋 <strong>미분류</strong>: ${none}개의 할일이 목표와 연결되지 않았어요<br>
-            ✅ <strong>완료</strong>: ${done}/${total}개 완료
-          </div>
-        </div>
-      </div>
-    </div>`;
+  if (t) { t.status = 'todo'; renderHome(); showToast('↩️ 복원됐어요!'); }
 }
 
 // ── Team Dashboard ────────────────────────────────────────────────────────
 function renderTeam() {
+  // 인사이트: 현재 유저 기준
+  const total = todos.length;
+  const initiative = todos.filter(t=>t.analysis?.relation==='initiative').length;
+  const goal_cnt   = todos.filter(t=>t.analysis?.relation==='goal').length;
+  const none       = todos.filter(t=>t.analysis?.relation==='none').length;
+  const done       = todos.filter(t=>t.status==='done').length;
+  const initiativePct = total ? Math.round(initiative/total*100) : 0;
+  const donePct       = total ? Math.round(done/total*100) : 0;
+
+  // 히트맵: DEMO_TODOS에서 실시간 계산
+  selectedPremiseId = selectedPremiseId || (premises[0]?.id ?? null);
+  const allPremises = Object.values(DEMO_PREMISES).flat();
+  const selectedP   = selectedPremiseId
+    ? (allPremises.find(p=>p.id===selectedPremiseId) || premises[0])
+    : premises[0];
+  const curTeamMembers = teamMembers;
+
+  // 팀원별 선택 전제 기여수 — DEMO_TODOS 기반 동적 계산
+  function calcContrib(userId, premiseId) {
+    if (!premiseId) return 0;
+    const prem = allPremises.find(p=>p.id===premiseId);
+    if (!prem) return 0;
+    return (DEMO_TODOS[userId]||[]).filter(t =>
+      t.analysis?.relation === prem.type ||
+      (t.analysis?.relation === 'initiative' && prem.type === 'initiative') ||
+      (t.analysis?.relation === 'goal'       && prem.type === 'goal')
+    ).length;
+  }
+  const contribs = curTeamMembers.map(m => calcContrib(m.user_id, selectedPremiseId));
+  const maxContrib = Math.max(1, ...contribs);
+  function heatLevel(cnt) { return cnt===0 ? 0 : Math.ceil(cnt/maxContrib*4); }
+
+  // 전체 팀 현황 (emoji 포함)
+  function memberAvatar(m) {
+    const u = DEMO_USERS.find(x => x.id === m.user_id);
+    return u?.emoji || m.username?.[0]?.toUpperCase() || '?';
+  }
+
+  // AI 인사이트 문구
+  const insightMsg = none > total*0.5
+    ? `<div style="background:var(--high-bg);border:1px solid var(--high);border-radius:var(--radius-md);padding:12px;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:var(--high);margin-bottom:3px">⚠️ 목표 정렬 필요</div>
+        <div style="font-size:12px;color:var(--text-02)">할일의 ${Math.round(none/total*100)}%가 어떤 이니셔티브와도 연결되지 않았어요</div>
+       </div>`
+    : `<div style="background:var(--low-bg);border:1px solid var(--low);border-radius:var(--radius-md);padding:12px;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:700;color:var(--low);margin-bottom:3px">🎉 목표 정렬 양호</div>
+        <div style="font-size:12px;color:var(--text-02)">할일의 ${total?Math.round((initiative+goal_cnt)/total*100):0}%가 팀 목표에 기여 중</div>
+       </div>`;
+
   document.getElementById('content-area').innerHTML = `
-    <!-- 전사 3D 뇌지도 -->
+    <!-- ① 나의 오늘 인사이트 -->
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="card">
+        <div class="card-header"><div class="card-title">📊 나의 오늘 인사이트</div></div>
+        <div class="card-body">
+          ${insightMsg}
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:12px;color:var(--text-02)">완료율</span>
+                <span style="font-size:13px;font-weight:700">${done}/${total}</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${donePct}%"></div></div>
+            </div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="font-size:12px;color:var(--text-02)">🎯 이니셔티브 기여</span>
+                <span style="font-size:13px;font-weight:700;color:var(--primary)">${initiativePct}%</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:${initiativePct}%;background:var(--primary)"></div></div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+              <span class="tag tag-initiative">${initiative} 이니셔티브</span>
+              <span class="tag tag-goal">${goal_cnt} 목표</span>
+              ${none>0?`<span class="tag tag-none">${none} 미분류</span>`:''}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ② 팀원 오늘 현황 -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">👥 팀 오늘 현황</div>
+          <div style="font-size:12px;color:var(--text-03)">${curTeamMembers.filter(m=>m.total===0).length>0?`⚠️ ${curTeamMembers.filter(m=>m.total===0).length}명 미작성`:'모두 작성 ✅'}</div>
+        </div>
+        <div class="card-body">
+          ${curTeamMembers.map(m => `
+            <div class="member-row">
+              <div class="member-avatar">${memberAvatar(m)}</div>
+              <div class="member-info">
+                <div class="member-name">${esc(m.username)}</div>
+                <div class="member-todo-count">${m.total>0?`${m.done}/${m.total} 완료`:'미작성'}</div>
+                ${m.total>0?`<div class="progress-bar" style="width:100%;max-width:140px;margin-top:4px"><div class="progress-fill" style="width:${m.total?m.done/m.total*100:0}%"></div></div>`:''}
+              </div>
+              <div class="member-badges">
+                ${m.total===0?`<span class="not-submitted">미작성</span>`:''}
+                ${m.initiative_related>0?`<span class="count-badge cb-initiative">${m.initiative_related} 이니셔티브</span>`:''}
+                ${m.goal_related>0?`<span class="count-badge cb-goal">${m.goal_related} 목표</span>`:''}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 전사 업무 연관 지도 -->
     <div class="card" style="margin-bottom:16px;overflow:hidden;padding:0">
-      <div class="card-header" style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div class="card-header" style="padding:12px 16px">
         <div class="card-title">🧠 전사 업무 연관 지도</div>
-        <span style="font-size:12px;color:var(--text-03)">이니셔티브 진척도 · 크로스팀 연결 · 오늘 활동</span>
+        <span style="font-size:12px;color:var(--text-03)">이니셔티브 진척도 · 크로스팀 연결</span>
         <a href="/static/graph-b.html" target="_blank"
           style="margin-left:auto;font-size:11px;color:var(--primary);text-decoration:none;padding:4px 10px;border:1px solid var(--primary-border);border-radius:6px;white-space:nowrap">
           전체화면 ↗
         </a>
       </div>
       <iframe src="/static/graph-b.html"
-        style="width:100%;height:520px;border:none;display:block"
-        loading="lazy"
-        title="TeamFlow 3D 지식 네트워크">
+        style="width:100%;height:480px;border:none;display:block" loading="lazy"
+        title="TeamFlow 지식 네트워크">
       </iframe>
     </div>
 
-    <!-- 팀원별 오늘 현황 -->
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">👥 팀 오늘 현황</div>
-        <div style="font-size:12px;color:var(--text-03)">${teamMembers.filter(m=>m.total===0).length>0?`⚠️ ${teamMembers.filter(m=>m.total===0).length}명 미작성`:'모두 작성 완료 ✅'}</div>
-      </div>
-      <div class="card-body">
-        ${teamMembers.map(m => `
-          <div class="member-row">
-            <div class="member-avatar">${m.avatar_url?`<img src="${m.avatar_url}"/>`:(m.username[0]||'?').toUpperCase()}</div>
-            <div class="member-info">
-              <div class="member-name">${esc(m.username)}</div>
-              <div class="member-todo-count">${m.total>0?`${m.done}/${m.total} 완료`:'미작성'}</div>
-              ${m.total>0?`<div class="progress-bar" style="width:100%;max-width:140px;margin-top:4px"><div class="progress-fill" style="width:${m.total?m.done/m.total*100:0}%"></div></div>`:''}
-            </div>
-            <div class="member-badges">
-              ${m.total===0?`<span class="not-submitted">미작성</span>`:''}
-              ${m.initiative_related>0?`<span class="count-badge cb-initiative">${m.initiative_related} 이니셔티브</span>`:''}
-              ${m.goal_related>0?`<span class="count-badge cb-goal">${m.goal_related} 목표</span>`:''}
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    </div>`;
-}
-
-// ── Heatmap ────────────────────────────────────────────────────────────────
-let selectedPremiseId = null;
-const contributionMatrix = {
-  1: { 1:2, 2:1, 3:0, 4:1 },
-  2: { 1:1, 2:0, 3:0, 4:2 },
-  3: { 1:2, 2:3, 3:0, 4:0 },
-  4: { 1:1, 2:0, 3:0, 4:0 },
-  5: { 1:0, 2:0, 3:2, 4:0 },
-};
-
-function renderHeatmap() {
-  selectedPremiseId = selectedPremiseId || (premises[0]?.id ?? null);
-  const members = teamMembers;
-  const matrix = selectedPremiseId ? (contributionMatrix[selectedPremiseId] || {}) : {};
-  const maxVal = Math.max(1, ...Object.values(matrix));
-
-  function heatLevel(count) {
-    if (count === 0) return 0;
-    return Math.ceil((count / maxVal) * 4);
-  }
-
-  document.getElementById('content-area').innerHTML = `
-    <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-weight:700;color:var(--text-03);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.6px">카테고리(전제) 선택</div>
+    <!-- ④ 기여 히트맵 -->
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--text-03);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px">📌 이니셔티브 / 목표 선택</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${premises.map(p => `
           <button onclick="selectPremiseHeatmap(${p.id})"
-            style="padding:7px 14px;border-radius:20px;border:1.5px solid ${selectedPremiseId===p.id?(p.type==='initiative'?'var(--primary)':'var(--blue)'):'var(--border)'};
+            style="padding:6px 12px;border-radius:var(--radius-full);border:1.5px solid ${selectedPremiseId===p.id?(p.type==='initiative'?'var(--primary)':'var(--blue)'):'var(--border)'};
             background:${selectedPremiseId===p.id?(p.type==='initiative'?'var(--primary-bg)':'var(--blue-bg)'):'white'};
             color:${selectedPremiseId===p.id?(p.type==='initiative'?'var(--primary)':'var(--blue)'):'var(--text-02)'};
-            font-size:12px;font-weight:${selectedPremiseId===p.id?700:400};cursor:pointer;min-height:36px;">
+            font-size:11px;font-weight:${selectedPremiseId===p.id?700:500};cursor:pointer;font-family:inherit;min-height:32px">
             ${p.type==='initiative'?'🎯':'📌'} ${esc(p.title)}
-          </button>
-        `).join('')}
+          </button>`).join('')}
       </div>
     </div>
 
     <div class="grid-2">
       <div class="card">
         <div class="card-header">
-          <div class="card-title">🔥 팀원별 기여 현황</div>
-          <div style="font-size:12px;color:var(--text-03)">${selectedPremiseId?esc(premises.find(p=>p.id===selectedPremiseId)?.title||''):'전체'}</div>
+          <div class="card-title">🔥 팀원별 기여</div>
+          <div style="font-size:12px;color:var(--text-03)">${selectedP?esc(selectedP.title):'전체'}</div>
         </div>
         <div class="card-body">
-          ${members.map(m => {
-            const count = matrix[m.user_id] ?? 0;
-            const level = heatLevel(count);
-            const pct = m.total ? Math.round(count/m.total*100) : 0;
+          ${curTeamMembers.map((m,i) => {
+            const cnt = contribs[i];
+            const lv  = heatLevel(cnt);
+            const pct = m.total ? Math.round(cnt/m.total*100) : 0;
             return `
               <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
-                <div class="member-avatar" style="flex-shrink:0">${m.username[0]||'?'}</div>
+                <div class="member-avatar" style="flex-shrink:0">${memberAvatar(m)}</div>
                 <div style="flex:1;min-width:0">
                   <div style="font-size:13px;font-weight:600;margin-bottom:4px">${esc(m.username)}</div>
                   <div style="display:flex;align-items:center;gap:8px">
-                    <div style="flex:1;height:8px;background:var(--bg-03);border-radius:4px;overflow:hidden">
-                      <div style="height:100%;width:${pct}%;background:${level>=3?'var(--primary)':level>=2?'#FF9266':'#FFD4C2'};border-radius:4px;transition:width 0.4s"></div>
+                    <div style="flex:1;height:6px;background:var(--bg-03);border-radius:var(--radius-full);overflow:hidden">
+                      <div style="height:100%;width:${pct}%;background:${lv>=3?'var(--primary)':lv>=2?'#FF9266':'#FFD4C2'};border-radius:var(--radius-full);transition:width 0.4s"></div>
                     </div>
-                    <span style="font-size:12px;font-weight:700;color:${level>=3?'var(--primary)':'var(--text-02)'};width:36px;text-align:right">${count}건</span>
+                    <span style="font-size:12px;font-weight:700;color:${lv>=3?'var(--primary)':'var(--text-02)'};width:36px;text-align:right">${cnt}건</span>
                   </div>
                 </div>
               </div>`;
           }).join('')}
-          <div style="display:flex;gap:6px;align-items:center;margin-top:12px;font-size:11px;color:var(--text-03)">
+          <div style="display:flex;gap:5px;align-items:center;margin-top:10px;font-size:11px;color:var(--text-03)">
             <span>낮음</span>
-            ${[0,1,2,3,4].map(l=>`<div style="width:14px;height:14px;border-radius:3px;background:${l===0?'var(--bg-03)':l===1?'#FFD4C2':l===2?'#FF9266':l===3?'#FF6114':'var(--primary)'}"></div>`).join('')}
+            ${[0,1,2,3,4].map(l=>`<div style="width:12px;height:12px;border-radius:3px;background:${l===0?'var(--bg-03)':l===1?'#FFD4C2':l===2?'#FF9266':l===3?'#FF6114':'var(--primary)'}"></div>`).join('')}
             <span>높음</span>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-header"><div class="card-title">📊 전체 매트릭스</div></div>
+        <div class="card-header"><div class="card-title">📊 전체 기여 매트릭스</div></div>
         <div class="card-body" style="padding:12px">
           <div class="heatmap-table-wrap">
-            <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:280px">
+            <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:260px">
               <thead>
                 <tr>
-                  <th style="text-align:left;padding:6px 8px;color:var(--text-03);font-weight:600;border-bottom:2px solid var(--border)">전제</th>
-                  ${members.map(m=>`<th style="padding:6px 4px;text-align:center;color:var(--text-03);font-weight:600;border-bottom:2px solid var(--border);min-width:44px">${esc(m.username.slice(0,2))}</th>`).join('')}
+                  <th style="text-align:left;padding:6px 8px;color:var(--text-03);font-weight:600;border-bottom:2px solid var(--border)">목표</th>
+                  ${curTeamMembers.map(m=>`<th style="padding:4px;text-align:center;color:var(--text-03);font-weight:600;border-bottom:2px solid var(--border);min-width:36px">${memberAvatar(m)}</th>`).join('')}
                 </tr>
               </thead>
               <tbody>
-                ${premises.map(p => {
-                  const rowData = contributionMatrix[p.id] || {};
-                  return `
-                    <tr style="cursor:pointer" onclick="selectPremiseHeatmap(${p.id})">
-                      <td style="padding:7px 8px;font-size:11px;font-weight:${selectedPremiseId===p.id?700:400};color:${selectedPremiseId===p.id?'var(--primary)':'var(--text-02)'};border-bottom:1px solid var(--border);max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                        ${p.type==='initiative'?'🎯':'📌'} ${esc(p.title.length>10?p.title.slice(0,10)+'…':p.title)}
-                      </td>
-                      ${members.map(m => {
-                        const cnt = rowData[m.user_id] ?? 0;
-                        const lv = heatLevel(cnt);
-                        return `<td style="padding:4px;text-align:center;border-bottom:1px solid var(--border)">
-                          <div style="width:28px;height:28px;border-radius:6px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
-                            background:${cnt===0?'var(--bg-03)':lv>=4?'var(--primary)':lv>=3?'#FF6114':lv>=2?'#FF9266':'#FFD4C2'};
-                            color:${cnt===0?'var(--text-03)':'white'}">
-                            ${cnt||''}
-                          </div>
-                        </td>`;
-                      }).join('')}
-                    </tr>`;
-                }).join('')}
+                ${premises.map(p => `
+                  <tr style="cursor:pointer" onclick="selectPremiseHeatmap(${p.id})">
+                    <td style="padding:6px 8px;font-size:11px;font-weight:${selectedPremiseId===p.id?700:400};color:${selectedPremiseId===p.id?'var(--primary)':'var(--text-02)'};border-bottom:1px solid var(--border);max-width:90px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                      ${p.type==='initiative'?'🎯':'📌'} ${esc(p.title.length>10?p.title.slice(0,10)+'…':p.title)}
+                    </td>
+                    ${curTeamMembers.map(m => {
+                      const cnt = calcContrib(m.user_id, p.id);
+                      const lv  = cnt===0?0:Math.ceil(cnt/Math.max(1,...curTeamMembers.map(x=>calcContrib(x.user_id,p.id)))*4);
+                      return `<td style="padding:3px;text-align:center;border-bottom:1px solid var(--border)">
+                        <div style="width:26px;height:26px;border-radius:5px;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+                          background:${cnt===0?'var(--bg-03)':lv>=4?'var(--primary)':lv>=3?'#FF6114':lv>=2?'#FF9266':'#FFD4C2'};
+                          color:${cnt===0?'var(--text-03)':'white'}">
+                          ${cnt||''}
+                        </div>
+                      </td>`;
+                    }).join('')}
+                  </tr>`).join('')}
               </tbody>
             </table>
           </div>
@@ -1346,7 +1327,7 @@ function renderHeatmap() {
 
 function selectPremiseHeatmap(premiseId) {
   selectedPremiseId = premiseId;
-  renderHeatmap();
+  renderTeam(); // 팀 탭 전체 재렌더 (content-area 덮어쓰기 버그 수정)
 }
 
 // ── Premises Page ──────────────────────────────────────────────────────────
