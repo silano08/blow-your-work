@@ -4,8 +4,8 @@
 
 > 전사 지식 공유 플랫폼 — 팀원의 할일이 회사 목표와 어떻게 연결되는지 AI가 실시간으로 분석하고, 흐름이 막힌 곳을 먼저 감지합니다.
 
-🌐 **Live**: http://byw-teamflow.eastasia.azurecontainer.io  
-📖 **API Docs**: http://byw-teamflow.eastasia.azurecontainer.io/docs
+🌐 **Live**: https://byw-app.wittyrock-6a71193a.eastasia.azurecontainerapps.io  
+📖 **API Docs**: https://byw-app.wittyrock-6a71193a.eastasia.azurecontainerapps.io/docs
 
 [![Deploy to Azure](https://github.com/silano08/blow-your-work/actions/workflows/deploy.yml/badge.svg)](https://github.com/silano08/blow-your-work/actions/workflows/deploy.yml)
 
@@ -116,7 +116,7 @@ blow-your-work/
 GitHub `main` 브랜치 push 시 자동 배포:
 
 1. Docker 이미지 빌드 → Azure ACR 푸시
-2. Azure ACI 컨테이너 재생성 (FQDN 고정: `byw-teamflow.eastasia.azurecontainer.io`)
+2. Azure Container Apps 재배포 (FQDN: `byw-app.wittyrock-6a71193a.eastasia.azurecontainerapps.io`)
 3. 헬스체크 통과 확인
 
 ```bash
