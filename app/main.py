@@ -1,11 +1,15 @@
+import os
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+import aiosqlite
 from dotenv import load_dotenv
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.database import init_db
+from app.database import init_db, DB_PATH
 from app.routers.auth import router as auth_router
 from app.routers.teams import router as teams_router
 from app.routers.premises import router as premises_router
@@ -18,6 +22,8 @@ from app.routers.ai_audit import router as ai_audit_router
 load_dotenv()
 
 STATIC_DIR = Path(__file__).parent / "static"
+_START_TIME = time.time()
+VERSION = "0.3.0"
 
 
 @asynccontextmanager
@@ -30,7 +36,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="TeamFlow — AI 팀 생산성 플랫폼",
     description="팀의 할일과 목표를 Copilot SDK AI로 연결하는 생산성 앱",
-    version="0.2.0",
+    version=VERSION,
     lifespan=lifespan,
 )
 
@@ -47,9 +53,50 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get("/health", tags=["system"])
-async def health() -> dict:
-    """Liveness probe."""
-    return {"status": "ok"}
+async def health() -> JSONResponse:
+    """Liveness + readiness probe — DB, uptime, version."""
+    uptime_sec = int(time.time() - _START_TIME)
+    db_ok = False
+    db_tables = 0
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            row = await (await db.execute(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table'"
+            )).fetchone()
+            db_tables = row[0] if row else 0
+            db_ok = db_tables > 0
+    except Exception:
+        pass
+
+    status = "ok" if db_ok else "degraded"
+    payload = {
+        "status": status,
+        "version": VERSION,
+        "uptime_sec": uptime_sec,
+        "uptime_human": _fmt_uptime(uptime_sec),
+        "db": {"ok": db_ok, "tables": db_tables},
+        "url": "http://byw-teamflow.eastasia.azurecontainer.io",
+    }
+    code = 200 if db_ok else 503
+    return JSONResponse(content=payload, status_code=code)
+
+
+@app.get("/ready", tags=["system"])
+async def ready() -> dict:
+    """Kubernetes-style readiness probe (lightweight)."""
+    return {"ready": True}
+
+
+def _fmt_uptime(sec: int) -> str:
+    d, r = divmod(sec, 86400)
+    h, r = divmod(r, 3600)
+    m, s = divmod(r, 60)
+    parts = []
+    if d: parts.append(f"{d}d")
+    if h: parts.append(f"{h}h")
+    if m: parts.append(f"{m}m")
+    parts.append(f"{s}s")
+    return " ".join(parts)
 
 
 @app.get("/", include_in_schema=False)

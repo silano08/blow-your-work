@@ -8,6 +8,14 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      ACR_NAME: bywtestacr0620
+      ACI_NAME: byw-app
+      RG: byw-test-rg
+      LOCATION: eastasia
+      DNS_LABEL: byw-teamflow
+      IMAGE: bywtestacr0620.azurecr.io/byw-app:latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,7 +29,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Login to ACR
-        run: az acr login --name bywtestacr0620
+        run: az acr login --name ${{ env.ACR_NAME }}
 
       - name: Build & Push (linux/amd64)
         uses: docker/build-push-action@v5
@@ -29,39 +37,54 @@ jobs:
           context: .
           platforms: linux/amd64
           push: true
-          tags: bywtestacr0620.azurecr.io/byw-app:latest
-          cache-from: type=registry,ref=bywtestacr0620.azurecr.io/byw-app:cache
-          cache-to: type=registry,ref=bywtestacr0620.azurecr.io/byw-app:cache,mode=max
+          tags: ${{ env.IMAGE }}
+          cache-from: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/byw-app:cache
+          cache-to: type=registry,ref=${{ env.ACR_NAME }}.azurecr.io/byw-app:cache,mode=max
 
-      - name: Redeploy on Azure Container Instances
+      - name: Redeploy ACI (FQDN 고정)
         run: |
-          ACR_PASS=$(az acr credential show --name bywtestacr0620 --query passwords[0].value -o tsv)
+          ACR_PASS=$(az acr credential show --name $ACR_NAME --query passwords[0].value -o tsv)
 
+          # 기존 컨테이너 삭제
           az container delete \
-            --name byw-app \
-            --resource-group byw-test-rg \
-            --yes || true
+            --name $ACI_NAME \
+            --resource-group $RG \
+            --yes 2>/dev/null || true
 
+          # dns-name-label 포함 재생성 → FQDN 고정
           az container create \
-            --name byw-app \
-            --resource-group byw-test-rg \
-            --image bywtestacr0620.azurecr.io/byw-app:latest \
-            --registry-login-server bywtestacr0620.azurecr.io \
-            --registry-username bywtestacr0620 \
+            --name $ACI_NAME \
+            --resource-group $RG \
+            --image $IMAGE \
+            --registry-login-server ${ACR_NAME}.azurecr.io \
+            --registry-username $ACR_NAME \
             --registry-password "$ACR_PASS" \
             --cpu 1 --memory 1.5 \
             --ports 80 \
             --ip-address Public \
+            --dns-name-label $DNS_LABEL \
             --os-type Linux \
-            --location eastasia \
+            --location $LOCATION \
             --environment-variables \
               GITHUB_TOKEN="${{ secrets.GH_TOKEN }}" \
-              AZURE_SPEECH_REGION="koreacentral" \
             --restart-policy Always
 
-      - name: Health Check & Print URL
+      - name: Health Check
         run: |
-          sleep 15
-          IP=$(az container show --name byw-app --resource-group byw-test-rg --query ipAddress.ip -o tsv)
-          echo "🚀 Deployed at: http://$IP"
-          curl -sf "http://$IP/health" && echo "✅ Health check passed!"
+          FQDN="${DNS_LABEL}.${LOCATION}.azurecontainer.io"
+          echo "🌐 FQDN: http://$FQDN"
+
+          echo "⏳ Waiting for container to be ready..."
+          for i in $(seq 1 12); do
+            sleep 10
+            HTTP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 8 "http://$FQDN/health" || echo "000")
+            echo "  attempt $i → HTTP $HTTP"
+            if [ "$HTTP" = "200" ]; then
+              echo "✅ Health check passed!"
+              curl -s "http://$FQDN/health" | python3 -m json.tool
+              exit 0
+            fi
+          done
+          echo "❌ Health check failed after 2 minutes"
+          az container logs --name $ACI_NAME --resource-group $RG || true
+          exit 1
