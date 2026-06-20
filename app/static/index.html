@@ -616,7 +616,7 @@
       <div class="sidebar-logo"><span>🧠</span> Hivemind</div>
       <button class="nav-item active" onclick="showPage('home',this)"><span class="nav-icon">🏠</span> 대시보드</button>
       <button class="nav-item" onclick="showPage('team',this)"><span class="nav-icon">👥</span> 팀 현황</button>
-      <button class="nav-item" onclick="showPage('premises',this)"><span class="nav-icon">🎯</span> 목표 관리</button>
+      <button class="nav-item nav-item-premises" onclick="showPage('premises',this)"><span class="nav-icon">🎯</span> 목표 관리</button>
       <button class="nav-item" onclick="showPage('audit',this)"><span class="nav-icon">🤖</span> AI 감사</button>
       <div class="sidebar-user">
         <div class="user-avatar" id="sidebar-avatar">😊</div>
@@ -892,6 +892,13 @@ function refreshApp() {
   const teamName = DEMO_TEAMS.find(t => t.id === currentUser.team_id)?.name || '';
   if (document.getElementById('sidebar-username')) document.getElementById('sidebar-username').textContent = currentUser.name || currentUser.username;
   if (document.getElementById('sidebar-role')) document.getElementById('sidebar-role').textContent = `${currentUser.role === 'leader' ? '팀장' : '팀원'} · ${teamName}`;
+
+  // 목표 관리 메뉴 — 팀장만 표시
+  const premisesNavItems = document.querySelectorAll('.nav-item-premises, .bnav-premises-wrap');
+  premisesNavItems.forEach(el => { el.style.display = isLeader() ? '' : 'none'; });
+  const premisesBnav = document.getElementById('bnav-premises');
+  if (premisesBnav) premisesBnav.style.display = isLeader() ? '' : 'none';
+
   showPage('home');
 }
 
@@ -915,7 +922,13 @@ const pageTitles = {
   audit: 'AI 감사',
 };
 
+function isLeader() { return currentUser?.role === 'leader'; }
+
 function showPage(page, navEl, bnavId) {
+  if (page === 'premises' && !isLeader()) {
+    showToast('👑 목표 관리는 팀장만 접근할 수 있어요');
+    return;
+  }
   closeDrawer();
   document.querySelectorAll('.sidebar .nav-item').forEach(n => n.classList.remove('active'));
   if (navEl && navEl.closest('.sidebar')) navEl.classList.add('active');
@@ -1124,7 +1137,7 @@ function renderHome() {
         <div class="card">
           <div class="card-header">
             <div class="card-title">🎯 이니셔티브</div>
-            <button onclick="showPage('premises')" style="background:none;border:none;font-size:12px;color:var(--primary);cursor:pointer;min-height:32px">전체 보기</button>
+            <button onclick="showPage('premises')" style="background:none;border:none;font-size:12px;color:var(--primary);cursor:pointer;min-height:32px;${isLeader()?'':'display:none'}">전체 보기</button>
           </div>
           <div class="card-body" style="padding:12px">
             ${premises.filter(p=>p.is_active&&p.type==='initiative').slice(0,2).map(p=>`
