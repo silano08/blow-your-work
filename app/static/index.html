@@ -6,9 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#F85100" />
-  <title>Hivemind 🧠</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23F85100'/><text y='.9em' font-size='72' x='12'>🧠</text></svg>" />
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23F85100'/><text y='.9em' font-size='72' x='12'>🧠</text></svg>" />
+  <title>TaskWave 🌊</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230066FF'/><text y='.9em' font-size='72' x='12'>🌊</text></svg>" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230066FF'/><text y='.9em' font-size='72' x='12'>🌊</text></svg>" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
   <style>
@@ -539,22 +539,22 @@
 <div id="login-screen">
   <!-- LEFT: copy + CTA -->
   <div class="landing-left">
-    <div class="landing-badge">🧠 AI-Powered Team Intelligence</div>
+    <div class="landing-badge">🌊 업무 흐름 AI 플랫폼</div>
     <div class="landing-headline">
-      전사 목표를<br><em>실시간으로</em><br>감시하라
+      업무의 흐름을<br><em>탄다</em>
     </div>
     <div class="landing-desc">
-      모든 팀원의 데일리 할일이<br>
-      회사 목표와 얼마나 연결돼 있는지<br>
-      AI가 분석하고 그래프로 보여줍니다.
+      팀원들의 할일이 목표와 자연스럽게 연결되고,<br>
+      흐름이 막힌 곳을 AI가 먼저 감지합니다.<br>
+      스크럼도, 회의도 없이 — 파도처럼.
     </div>
 
     <div class="landing-features">
       <div class="lf-item">
-        <div class="lf-icon orange">🧠</div>
+        <div class="lf-icon orange">🌊</div>
         <div class="lf-copy">
-          <div class="lf-title">전사 집단지성 그래프</div>
-          <div class="lf-desc">타팀 업무가 내 이니셔티브와 얼마나 연결됐는지 실시간 노드 그래프로 감시</div>
+          <div class="lf-title">전사 업무 흐름 지도</div>
+          <div class="lf-desc">팀과 팀 사이 업무가 어떻게 연결되는지 실시간 노드 그래프로 한눈에</div>
         </div>
       </div>
       <div class="lf-item">
@@ -568,7 +568,7 @@
         <div class="lf-icon green">⚡</div>
         <div class="lf-copy">
           <div class="lf-title">비동기 데일리 스크럼</div>
-          <div class="lf-desc">30분짜리 회의 없이 — 텍스트 입력 한 번으로 전원 현황 공유</div>
+          <div class="lf-desc">30분짜리 회의 없이 — 텍스트 입력 한 번으로 전원 흐름 공유</div>
         </div>
       </div>
     </div>
@@ -585,7 +585,7 @@
 
     <div class="landing-footer">
       Powered by GitHub Copilot SDK · Deployed on Azure<br>
-      집단지성이 목표를 완성한다 — Jira가 못 하는 것
+      업무의 흐름을 탄다 — TaskWave
     </div>
   </div>
 
@@ -615,7 +615,7 @@
   <div class="app-layout">
     <!-- Sidebar / Drawer -->
     <nav class="sidebar" id="sidebar">
-      <div class="sidebar-logo"><span>🧠</span> Hivemind</div>
+      <div class="sidebar-logo"><span>🌊</span> TaskWave</div>
       <button class="nav-item active" onclick="showPage('home',this)"><span class="nav-icon">🏠</span> 대시보드</button>
       <button class="nav-item" onclick="showPage('team',this)"><span class="nav-icon">👥</span> 팀 현황</button>
       <button class="nav-item nav-item-premises" onclick="showPage('premises',this)"><span class="nav-icon">🎯</span> 목표 관리</button>
@@ -1063,8 +1063,8 @@ function renderHome() {
     <!-- ①  전사 집단지성 그래프 — 풀위드 메인 비주얼 -->
     <div style="border-radius:var(--radius);overflow:hidden;border:1.5px solid var(--primary-border);margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:8px;padding:10px 16px;background:var(--bg-01);border-bottom:1px solid var(--border)">
-        <span style="font-size:15px">🧠</span>
-        <span style="font-weight:700;font-size:14px;letter-spacing:-0.02em">전사 집단지성 그래프</span>
+        <span style="font-size:15px">🌊</span>
+        <span style="font-weight:700;font-size:14px;letter-spacing:-0.02em">전사 업무 흐름 지도</span>
         <span style="font-size:11px;color:var(--text-03)">— 지금 전사가 어디로 향하는지</span>
         <span style="margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--primary);font-weight:700">
           <span style="width:6px;height:6px;border-radius:50%;background:var(--primary);animation:blink 1.6s ease-in-out infinite;display:inline-block"></span>LIVE
@@ -1826,13 +1826,13 @@ async function renderAudit(tab) {
       <div style="flex:1;min-width:280px">
         <div class="card">
           <div style="padding:12px 18px;border-bottom:1px solid var(--border);background:var(--bg-02)">
-            <div style="font-size:11px;color:var(--text-03)">From: Hivemind AI &lt;noreply@hivemind.ai&gt;</div>
+            <div style="font-size:11px;color:var(--text-03)">From: TaskWave AI &lt;noreply@taskwave.ai&gt;</div>
             <div style="font-size:11px;color:var(--text-03)">To: ${mailUser.name} &lt;${mailUser.username}@company.com&gt;</div>
-            <div style="font-size:14px;font-weight:700;margin-top:6px">[Hivemind] ${mailUser.name}님의 오늘 업무 AI 분석 리포트</div>
+            <div style="font-size:14px;font-weight:700;margin-top:6px">[TaskWave] ${mailUser.name}님의 오늘 업무 흐름 AI 분석 리포트</div>
           </div>
           <div style="padding:20px;max-width:560px">
             <div style="background:linear-gradient(135deg,#151515,#F85100);color:white;border-radius:12px;padding:18px 22px;margin-bottom:16px">
-              <div style="font-size:10px;opacity:.7;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">Hivemind Daily Report</div>
+              <div style="font-size:10px;opacity:.7;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">TaskWave Daily Report</div>
               <div style="font-size:18px;font-weight:700">${mailUser.emoji} ${mailUser.name}님, 수고하셨어요!</div>
               <div style="font-size:12px;opacity:.8;margin-top:4px">${dateStr} · ${team?.name||''}</div>
             </div>
@@ -1857,7 +1857,7 @@ async function renderAudit(tab) {
                 ${t.analysis?.confidence ? `<span style="font-size:11px;font-weight:700;color:${confColor(t.analysis.confidence)}">${Math.round(t.analysis.confidence*100)}%</span>` : ''}
               </div>`).join('')}
             <div style="margin-top:14px;padding:12px;background:var(--bg-02);border-radius:8px;font-size:12px;color:var(--text-02);line-height:1.7">
-              Hivemind · AI 팀 생산성 플랫폼 · 수신 거부는 설정에서
+              TaskWave · 업무의 흐름을 탄다 · 수신 거부는 설정에서
             </div>
           </div>
         </div>
