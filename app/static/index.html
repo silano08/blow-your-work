@@ -855,6 +855,7 @@ function switchDemoUser(userId) {
 // ── Boot ──────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
   updateDate();
+  _loadHitlSettings(); // HITL 설정 백그라운드 로드 (인증 불필요)
   if (location.search.includes('demo=1')) { enterDemo(); return; }
   try {
     const res = await fetch(`${API}/auth/me`, { credentials: 'include' });
@@ -1368,23 +1369,42 @@ async function triggerAnalysis() {
 
 async function decomposeFromPremise() {
   const goalPremises = premises.filter(p => p.type === 'goal' && p.is_active);
-  if (!goalPremises.length) { showToast('활성 목표(소전제)가 없어요'); return; }
-  // 가장 관련도 높은 목표 자동 선택 (첫 번째)
+  if (!goalPremises.length) { showToast('활성 목표가 없어요'); return; }
   const premise = goalPremises[0];
   showToast('🤖 Copilot이 분해 중...');
+
+  // 목표 키워드 기반 구체적인 실행 태스크 생성
+  const kw = premise.title.replace(/하기$|완료$|달성$|구축$/, '').trim();
+  const desc = premise.description || '';
+
+  // 목표 유형 감지 → 도메인별 태스크 템플릿
+  const templates = [];
+  if (/자동화|스크립트|봇|배포|CI|CD/.test(kw + desc)) {
+    templates.push(`${kw} 구현 범위 정의서 작성`, `${kw} 스크립트 초안 코딩`, `${kw} 테스트 케이스 작성 및 검증`);
+  } else if (/인터뷰|UX|사용자|리서치|와이어|프로토/.test(kw + desc)) {
+    templates.push(`${kw} 인터뷰 대상자 섭외 및 일정 확정`, `${kw} 인터뷰 스크립트 작성`, `${kw} 결과 인사이트 문서 정리`);
+  } else if (/분석|리포트|대시보드|KPI|데이터/.test(kw + desc)) {
+    templates.push(`${kw} 필요 데이터 소스 파악`, `${kw} 분석 쿼리 작성`, `${kw} 결과 문서화 및 팀 공유`);
+  } else if (/영업|고객|이메일|캠페인|채널/.test(kw + desc)) {
+    templates.push(`${kw} 대상 리스트 정리`, `${kw} 실행 계획 수립`, `${kw} 진행 현황 CRM 업데이트`);
+  } else {
+    templates.push(`${kw} 현황 파악 및 갭 분석`, `${kw} 실행 계획 수립`, `${kw} 1단계 실행 및 결과 공유`);
+  }
+
   setTimeout(() => {
-    const generated = [
-      `${premise.title} 관련 리서치 정리`,
-      `${premise.title} 액션 플랜 작성`,
-      `${premise.title} 진행상황 팀 공유`,
-    ];
-    generated.forEach(title => {
-      todos.unshift({ id: Date.now() + Math.random(), user_id: currentUser.id, title, status:'todo',
-        todo_date: new Date().toISOString().slice(0,10), analysis: { relation:'goal', confidence:0.88 } });
+    templates.forEach((title, i) => {
+      todos.unshift({
+        id: Date.now() + i,
+        user_id: currentUser.id,
+        title,
+        status: 'todo',
+        todo_date: new Date().toISOString().slice(0,10),
+        analysis: { relation: 'goal', confidence: 0.88 + i * 0.02, premise_id: premise.id },
+      });
     });
     renderHome();
-    showToast(`✨ ${generated.length}개 태스크 생성! (${premise.title})`);
-  }, 1800);
+    showToast(`✨ ${templates.length}개 태스크 생성! (${premise.title})`);
+  }, 1200);
 }
 
 // ── History util (복원 기능) ──────────────────────────────────────────────
@@ -1701,9 +1721,20 @@ function renderPremises() {
     </div>`;
 }
 
-function renderAudit(tab) {
+async function renderAudit(tab) {
   const activeTab = tab || 'decisions';
-  if (!auditDecisions) auditDecisions = DEMO_AI_DECISIONS.map(d => ({...d}));
+
+  // API에서 AI decisions 로드 (항상 최신 데이터 사용)
+  if (!auditDecisions || tab === 'decisions') {
+    try {
+      const res = await fetch(`${API}/ai/decisions`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.length) auditDecisions = data;
+      }
+    } catch (_) {}
+    if (!auditDecisions) auditDecisions = DEMO_AI_DECISIONS.map(d => ({...d}));
+  }
 
   const stats = { pending:0, approved:0, flagged:0, overridden:0 };
   auditDecisions.forEach(d => { stats[d.status] = (stats[d.status]||0)+1; });
@@ -1843,26 +1874,41 @@ function toggleReasoning(id) {
 function toggleOverrideForm(id) {
   document.getElementById('aoverride-'+id)?.classList.toggle('show');
 }
-function auditAction(id, status) {
+async function auditAction(id, status) {
   if (!auditDecisions) return;
   const d = auditDecisions.find(x => x.id === id);
-  if (d) {
-    d.status = status;
-    renderAudit();
-    showToast(status==='approved'?'✅ AI 판단을 승인했어요':'⚠️ 이의제기가 접수됐어요');
-  }
+  if (!d) return;
+  // API 호출 (데모/실서버 모두)
+  try {
+    await fetch(`${API}/ai/decisions/${id}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, review_by: currentUser?.name || 'admin' }),
+    });
+  } catch (_) {}
+  d.status = status;
+  renderAudit('decisions');
+  showToast(status==='approved'?'✅ AI 판단을 승인했어요':'⚠️ 이의제기가 접수됐어요');
 }
-function submitOverride(id) {
+
+async function submitOverride(id) {
   const text = document.getElementById('aoverride-text-'+id)?.value.trim();
   if (!text) { showToast('수정 내용을 입력해주세요'); return; }
   if (!auditDecisions) return;
   const d = auditDecisions.find(x => x.id === id);
-  if (d) {
-    d.status = 'overridden';
-    d.override_output = text;
-    renderAudit();
-    showToast('✏️ AI 판단이 수정됐어요');
-  }
+  if (!d) return;
+  // API 호출 (데모/실서버 모두)
+  try {
+    await fetch(`${API}/ai/decisions/${id}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'overridden', review_by: currentUser?.name || 'admin', override_output: text }),
+    });
+  } catch (_) {}
+  d.status = 'overridden';
+  d.override_output = text;
+  renderAudit('decisions');
+  showToast('✏️ AI 판단이 수정됐어요');
 }
 
 function setMailUser(userId) {
@@ -1870,10 +1916,19 @@ function setMailUser(userId) {
   renderAudit('mail');
 }
 
-function mapGoalToInitiative(goalId, initiativeId) {
+async function mapGoalToInitiative(goalId, initiativeId) {
   const p = premises.find(x => x.id === goalId);
   if (!p) return;
   p.parent_id = initiativeId ? parseInt(initiativeId) : null;
+  if (!IS_DEMO) {
+    try {
+      await fetch(`${API}/premises/${goalId}`, {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parent_id: p.parent_id }),
+      });
+    } catch (_) {}
+  }
   renderPremises();
   const iName = initiativeId ? premises.find(x => x.id === parseInt(initiativeId))?.title : null;
   showToast(iName ? `🔗 "${iName}"에 연결됐어요!` : '🔗 연결이 해제됐어요');
@@ -1918,27 +1973,54 @@ function openPremiseModal(type) {
   setTimeout(() => document.getElementById('pm-title')?.focus(), 100);
 }
 
-function savePremise(type) {
+async function savePremise(type) {
   const title = document.getElementById('pm-title')?.value.trim();
   if (!title) { showToast('제목을 입력해주세요'); return; }
   const parentId = document.getElementById('pm-parent')?.value
     ? parseInt(document.getElementById('pm-parent').value) : null;
-  premises.push({
+  const newPremise = {
     id: Date.now(), type, title,
     description: document.getElementById('pm-desc')?.value || '',
     team_id: currentUser.team_id, parent_id: parentId, is_active: 1,
-  });
+  };
+  if (!IS_DEMO) {
+    try {
+      const res = await fetch(`${API}/premises/`, {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, title, description: newPremise.description, team_id: currentUser.team_id, parent_id: parentId }),
+      });
+      if (res.ok) { const data = await res.json(); newPremise.id = data.id; }
+    } catch (_) {}
+  }
+  premises.push(newPremise);
   closeModal();
   renderPremises();
   showToast(`✅ ${type === 'initiative' ? '이니셔티브' : '목표'}가 추가됐어요!`);
 }
 
-function togglePremise(id) {
+async function togglePremise(id) {
   const p = premises.find(x=>x.id===id);
-  if (p) { p.is_active = p.is_active ? 0 : 1; renderPremises(); }
+  if (!p) return;
+  p.is_active = p.is_active ? 0 : 1;
+  if (!IS_DEMO) {
+    try {
+      await fetch(`${API}/premises/${id}`, {
+        method: 'PATCH', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: !!p.is_active }),
+      });
+    } catch (_) {}
+  }
+  renderPremises();
 }
 
-function deletePremise(id) {
+async function deletePremise(id) {
+  if (!IS_DEMO) {
+    try {
+      await fetch(`${API}/premises/${id}`, { method: 'DELETE', credentials: 'include' });
+    } catch (_) {}
+  }
   premises = premises.filter(p=>p.id!==id);
   renderPremises();
   showToast('🗑️ 삭제됐어요');
@@ -2102,8 +2184,46 @@ function debugSelectTeam(teamId) {
   else debugPanelRender();
 }
 
-function hitlSetAutoApprove(v) { window._hitlSettings.auto_approve_enabled = v; showToast(v?'🤖 AI 자동 승인 ON':'🔍 수동 검토 모드 ON'); }
-function hitlSetNotify(v) { window._hitlSettings.notify_on_flag = v; showToast(v?'🔔 이의제기 알림 ON':'🔕 알림 OFF'); }
+async function hitlSetAutoApprove(v) {
+  window._hitlSettings.auto_approve_enabled = v;
+  await _saveHitlSettings();
+  showToast(v?'🤖 AI 자동 승인 ON':'🔍 수동 검토 모드 ON');
+}
+async function hitlSetNotify(v) {
+  window._hitlSettings.notify_on_flag = v;
+  await _saveHitlSettings();
+  showToast(v?'🔔 이의제기 알림 ON':'🔕 알림 OFF');
+}
+async function _saveHitlSettings() {
+  try {
+    await fetch(`${API}/ai/hitl-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        auto_approve_enabled:   !!window._hitlSettings.auto_approve_enabled,
+        auto_approve_threshold: Number(window._hitlSettings.auto_approve_threshold) || 0.95,
+        notify_on_flag:         !!window._hitlSettings.notify_on_flag,
+        notify_recipients:      window._hitlSettings.notify_recipients || 'leader',
+        review_required_types:  window._hitlSettings.review_required_types || 'todo_match,anomaly',
+      }),
+    });
+  } catch (_) {}
+}
+async function _loadHitlSettings() {
+  try {
+    const res = await fetch(`${API}/ai/hitl-settings`);
+    if (res.ok) {
+      const data = await res.json();
+      window._hitlSettings = {
+        auto_approve_enabled:   data.auto_approve_enabled === '1' || data.auto_approve_enabled === true,
+        auto_approve_threshold: parseFloat(data.auto_approve_threshold) || 0.95,
+        notify_on_flag:         data.notify_on_flag === '1' || data.notify_on_flag === true,
+        notify_recipients:      data.notify_recipients || 'leader',
+        review_required_types:  data.review_required_types || 'todo_match,anomaly',
+      };
+    }
+  } catch (_) {}
+}
 
 // ── Logout ─────────────────────────────────────────────────────────────────
 function logout() {
