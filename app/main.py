@@ -18,6 +18,7 @@ from app.routers.dashboard import router as dashboard_router
 from app.routers.analysis import router as analysis_router
 from app.routers.slack import router as slack_router
 from app.routers.ai_audit import router as ai_audit_router
+from app.routers.ai_suggest import router as ai_suggest_router
 
 load_dotenv()
 
@@ -48,6 +49,7 @@ app.include_router(dashboard_router)
 app.include_router(analysis_router)
 app.include_router(slack_router)
 app.include_router(ai_audit_router)
+app.include_router(ai_suggest_router)
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 

@@ -7,6 +7,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#F85100" />
   <title>Hivemind 🧠</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23F85100'/><text y='.9em' font-size='72' x='12'>🧠</text></svg>" />
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23F85100'/><text y='.9em' font-size='72' x='12'>🧠</text></svg>" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet" />
   <style>
@@ -670,8 +672,10 @@ let teamMembers = [];
 let auditDecisions = null;
 let mailPreviewUser = null;
 let selectedPremiseId = null;
+let _azureSuggestions = [];   // Azure OpenAI /ai/suggest-todos 응답 캐시
 window._hitlSettings = { auto_approve_enabled:false, auto_approve_threshold:0.95, notify_on_flag:true, review_required_types:'todo_match,anomaly' };
 const IS_LOCAL = ['localhost','127.0.0.1'].includes(location.hostname);
+const IS_DEMO  = location.search.includes('demo=1');
 
 // ── 전체 데모 데이터셋 ───────────────────────────────────────────────────
 const TODAY = new Date().toISOString().slice(0,10);
@@ -899,6 +903,21 @@ function refreshApp() {
   const premisesBnav = document.getElementById('bnav-premises');
   if (premisesBnav) premisesBnav.style.display = isLeader() ? '' : 'none';
 
+  // Azure OpenAI 추천 비동기 로드 (비 데모 모드)
+  if (!IS_DEMO && currentUser.team_id) {
+    fetch(`${API}/ai/suggest-todos?team_id=${currentUser.team_id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.suggestions?.length) {
+          _azureSuggestions = data.suggestions.map(s => ({
+            title: s.title,
+            premise_type: s.premise_type,
+            premise: s.premise_title,
+          }));
+        }
+      }).catch(() => {});
+  }
+
   showPage('home');
 }
 
@@ -972,19 +991,39 @@ function relationTag(rel) {
 }
 
 // ── AI Recommendation ──────────────────────────────────────────────────────
-const AI_SUGGESTIONS = [
-  { title:'DML 자동화 진행 현황 문서 업데이트', premise_type:'initiative', premise:'반복 업무 자동화' },
-  { title:'슬랙 답장 봇 테스트 케이스 작성', premise_type:'goal', premise:'매일 답장 자동화' },
-  { title:'결제 오류 패턴 분석 보고서 작성', premise_type:'goal', premise:'결제 오류 알림' },
-  { title:'팀 자동화 스크립트 코드 리뷰', premise_type:'initiative', premise:'반복 업무 자동화' },
-];
+// AI 추천 — Azure OpenAI 응답 우선, 없으면 팀 전제 기반 규칙형 생성
+function getTeamAISuggestions() {
+  if (_azureSuggestions.length) return _azureSuggestions;
+  if (!currentUser) return [];
+  const teamPremises = (DEMO_PREMISES[currentUser.team_id] || []).filter(p => p.is_active);
+  const initiatives = teamPremises.filter(p => p.type === 'initiative');
+  const goals       = teamPremises.filter(p => p.type === 'goal');
+
+  const suggestions = [];
+  initiatives.slice(0, 2).forEach(ini => {
+    const keyword = ini.title.replace(/하기$|강화$|확보$|달성$|개선$|높이기$/, '');
+    suggestions.push({
+      title: `${keyword} 관련 진행 현황 정리 및 공유`,
+      premise_type: 'initiative',
+      premise: ini.title,
+    });
+  });
+  goals.slice(0, 2).forEach(goal => {
+    suggestions.push({
+      title: `${goal.title} — 오늘 세부 실행 항목 확인`,
+      premise_type: 'goal',
+      premise: goal.title,
+    });
+  });
+  return suggestions.slice(0, 4);
+}
 
 function showAiRecommend() {
   const box = document.getElementById('ai-recommend-box');
   if (!box) return;
-  const picks = AI_SUGGESTIONS.slice(0, 2);
+  const picks = getTeamAISuggestions().slice(0, 2);
   box.innerHTML = `
-    <div class="ai-recommend-label">✨ AI 추천 — 급한 아젠다 기반</div>
+    <div class="ai-recommend-label">✨ AI 추천 — 팀 이니셔티브 기반</div>
     ${picks.map(s => `
       <div class="ai-recommend-item" onclick="useRecommend('${esc(s.title)}')">
         <span class="recommend-badge ${s.premise_type==='initiative'?'badge-initiative':'badge-goal'}">${s.premise_type==='initiative'?'이니셔티브':'목표'}</span>
@@ -1039,13 +1078,13 @@ function renderHome() {
         title="전사 집단지성 그래프"></iframe>
     </div>
 
-    <!-- ② AI 할일 추천 — 이니셔티브 기반 칩 -->
+    <!-- ② AI 할일 추천 — 팀 이니셔티브 기반 칩 -->
     <div style="margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:var(--text-03);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:8px">
-        ✨ AI 추천 — 지금 가장 급한 것
+        ✨ AI 추천 — 우리 팀 이니셔티브 기반
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${AI_SUGGESTIONS.map(s => `
+        ${getTeamAISuggestions().map(s => `
           <button onclick="useRecommend('${esc(s.title)}')"
             style="display:flex;align-items:center;gap:7px;padding:8px 14px;border-radius:var(--radius-full);
                    border:1.5px solid ${s.premise_type==='initiative'?'var(--primary-border)':'var(--blue-bg)'};

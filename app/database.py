@@ -62,6 +62,9 @@ async def init_db() -> None:
             await db.execute("ALTER TABLE premises ADD COLUMN parent_id INTEGER REFERENCES premises(id) ON DELETE SET NULL")
         except Exception:
             pass
+        # 구버전 type 값 정규화: grand→initiative, small→goal
+        await db.execute("UPDATE premises SET type='initiative' WHERE type='grand'")
+        await db.execute("UPDATE premises SET type='goal' WHERE type='small'")
 
         # ── Daily Todos ─────────────────────────────────────────────────
         await db.execute("""
@@ -160,8 +163,10 @@ async def _seed(db: aiosqlite.Connection) -> None:
     await db.executemany(
         "INSERT OR IGNORE INTO teams (id, name) VALUES (?,?)",
         [
-            (1, "결제 플랫폼 팀"),
-            (2, "프로덕트 팀"),
+            (1, "개발팀"),
+            (2, "기획팀"),
+            (3, "영업팀"),
+            (4, "회계팀"),
         ],
     )
 
@@ -178,23 +183,38 @@ async def _seed(db: aiosqlite.Connection) -> None:
     )
 
     # ── Premises ──────────────────────────────────────────────────────────
-    # 대전제 = 구체적인 카테고리 업무 (예: "DML 처리 자동화하기")
-    # 이니셔티브(initiative) = 큰 방향의 카테고리 업무
-    # 목표(goal) = 이니셔티브 안의 구체 실행 목표 (parent_id로 이니셔티브에 연결)
+    # initiative = 큰 방향의 카테고리 업무, goal = 구체 실행 목표
     await db.executemany(
         "INSERT OR IGNORE INTO premises (id, type, title, description, team_id, created_by, parent_id, is_active) VALUES (?,?,?,?,?,?,?,?)",
         [
-            # 이니셔티브 (구 대전제)
-            (1, "initiative", "반복 업무 자동화하기",         "DML 처리, 배포, 리포트 등 반복되는 업무를 자동화",           1, 1, None, 1),
-            (2, "initiative", "팀 커뮤니케이션 효율화하기",   "매일 답장, 미팅 정리, 공유 문서 자동화",                    1, 1, None, 1),
-            (3, "initiative", "결제 안정성 높이기",           "오류 감지, 모니터링, 빠른 핫픽스 대응",                     1, 1, None, 1),
-            (4, "initiative", "사용자 경험 개선하기",         "UX 리서치 → 프로토타입 → 반영 사이클 단축",                1, 3, None, 1),
-            # 목표 (구 소전제) — parent_id로 이니셔티브에 연결
-            (5, "goal", "DML 처리 자동화하기",          "수동 DB 작업을 스크립트로 전환",           1, 2, 1, 1),
-            (6, "goal", "매일 답장 자동화하기",          "Slack 봇으로 정기 메시지 자동 발송",        1, 1, 2, 1),
-            (7, "goal", "배포 파이프라인 구축하기",      "GitHub Actions → 스테이징 자동 배포",      1, 3, 1, 1),
-            (8, "goal", "결제 오류 실시간 알림 만들기",  "에러 발생 시 Slack 즉시 알림",              1, 2, 3, 1),
-            (9, "goal", "결제 UX 인터뷰 5건 완료하기",  "실사용자 인터뷰로 페인포인트 도출",         1, 4, 4, 1),
+            # ── 팀 1: 개발팀 ──
+            (1,  "initiative", "반복 업무 자동화하기",         "DML·배포·리포트 등 반복 업무 자동화로 생산성 30% 향상",     1, 1, None, 1),
+            (2,  "initiative", "팀 커뮤니케이션 효율화하기",   "매일 답장, 미팅 정리, 공유 문서 자동화",                    1, 1, None, 1),
+            (3,  "initiative", "결제 안정성 높이기",           "오류 감지, 모니터링, 빠른 핫픽스 대응",                     1, 1, None, 1),
+            (4,  "initiative", "사용자 경험 개선하기",         "UX 리서치 → 프로토타입 → 반영 사이클 단축",                1, 3, None, 1),
+            (5,  "goal", "DML 처리 자동화하기",          "수동 DB 작업을 스크립트로 전환",           1, 2, 1, 1),
+            (6,  "goal", "매일 답장 자동화하기",          "Slack 봇으로 정기 메시지 자동 발송",        1, 1, 2, 1),
+            (7,  "goal", "배포 파이프라인 구축하기",      "GitHub Actions → 스테이징 자동 배포",      1, 3, 1, 1),
+            (8,  "goal", "결제 오류 실시간 알림 만들기",  "에러 발생 시 Slack 즉시 알림",              1, 2, 3, 1),
+            (9,  "goal", "결제 UX 인터뷰 5건 완료하기",  "실사용자 인터뷰로 페인포인트 도출",         1, 4, 4, 1),
+            # ── 팀 2: 기획팀 ──
+            (10, "initiative", "사용자 경험 혁신하기",         "UX 리서치→프로토타입→반영 사이클 단축",                     2, 5, None, 1),
+            (11, "initiative", "데이터 기반 의사결정 문화",    "GA·SQL 분석 리포트 주 1회 정례화",                          2, 5, None, 1),
+            (12, "goal", "결제 UX 인터뷰 5건",          "실사용자 인터뷰로 페인포인트 도출",         2, 5, 10, 1),
+            (13, "goal", "월간 KPI 대시보드 구축",       "핵심 지표 자동 시각화 도구 제작",           2, 5, 11, 1),
+            (14, "goal", "IA 재설계 완료",               "사용자 여정 기반 정보 구조 개선",           2, 5, 10, 1),
+            # ── 팀 3: 영업팀 ──
+            (15, "initiative", "신규 고객 확보하기",           "분기 신규 계약 20건 달성",                                  3, 8, None, 1),
+            (16, "initiative", "고객 재계약률 높이기",         "재계약률 85% 이상 유지",                                    3, 8, None, 1),
+            (17, "goal", "콜드 이메일 캠페인",           "주 200건 아웃바운드 이메일 발송",           3, 8, 15, 1),
+            (18, "goal", "고객 CS 대응 자동화",          "FAQ 봇으로 1차 응대 자동화",                3, 8, 16, 1),
+            (19, "goal", "신규 채널 2개 발굴",           "링크드인·콘텐츠 마케팅 채널 개설",          3, 8, 15, 1),
+            # ── 팀 4: 회계팀 ──
+            (20, "initiative", "재무 프로세스 자동화",         "월결산 소요 시간 50% 단축",                                 4, 11, None, 1),
+            (21, "initiative", "비용 투명성 확보",             "팀별 지출 실시간 대시보드 운영",                            4, 11, None, 1),
+            (22, "goal", "전표 자동 분류",               "AI로 계정과목 자동 태깅",                   4, 11, 20, 1),
+            (23, "goal", "월간 비용 리포트 자동화",      "구글시트 → Slack 자동 발송",                4, 11, 21, 1),
+            (24, "goal", "정산 쿼리 스크립트 완성",      "매월 정산 데이터 자동 추출",                4, 11, 20, 1),
         ],
     )
 
