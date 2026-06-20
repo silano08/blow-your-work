@@ -10,6 +10,18 @@ from app.routers.auth import get_current_user
 router = APIRouter(prefix="/analysis", tags=["analysis"])
 
 
+def _normalize_relation(relation: str | None) -> str:
+    """Normalize legacy relation labels to the current schema."""
+    normalized = (relation or "none").lower()
+    if normalized == "grand":
+        return "initiative"
+    if normalized == "small":
+        return "goal"
+    if normalized not in {"initiative", "goal", "none"}:
+        return "none"
+    return normalized
+
+
 async def _run_analysis(db: aiosqlite.Connection, todo_ids: list[int] | None = None) -> int:
     """
     실제 분석 실행 — Copilot SDK가 각 Todo를 전제와 매핑합니다.
@@ -55,13 +67,14 @@ async def _run_analysis(db: aiosqlite.Connection, todo_ids: list[int] | None = N
 
     # 결과 저장
     for r in results:
+        relation = _normalize_relation(r.get("relation"))
         # 기존 분석 삭제 후 재삽입 (최신 분석으로 갱신)
         await db.execute("DELETE FROM todo_analysis WHERE todo_id=?", (r["todo_id"],))
         await db.execute(
             """INSERT INTO todo_analysis
                (todo_id, premise_id, relation, confidence, reason)
                VALUES (?,?,?,?,?)""",
-            (r["todo_id"], r.get("premise_id"), r["relation"], r["confidence"], r["reason"]),
+            (r["todo_id"], r.get("premise_id"), relation, r["confidence"], r["reason"]),
         )
 
     await db.commit()

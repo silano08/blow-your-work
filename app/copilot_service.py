@@ -29,6 +29,13 @@ Rules:
 - Be strict: confidence > 0.7 only for clear matches
 - reason must be in Korean"""
 
+ANALYSIS_FALLBACK = {
+    "premise_id": None,
+    "relation": "none",
+    "confidence": 0.0,
+    "reason": "분석 실패",
+}
+
 
 async def analyze_todo_premise(
     todo_title: str,
@@ -98,13 +105,29 @@ async def analyze_todos_batch(
 ) -> list[dict]:
     """여러 Todo를 배치로 분석합니다 (최대 5개씩 병렬)."""
     async def _analyze_one(todo: dict) -> dict:
-        result = await analyze_todo_premise(
-            todo_title=todo["title"],
-            todo_detail=todo.get("detail", ""),
-            premises=premises,
-            model=model,
-        )
-        return {"todo_id": todo["id"], **result}
+        for attempt in range(3):
+            try:
+                result = await asyncio.wait_for(
+                    analyze_todo_premise(
+                        todo_title=todo["title"],
+                        todo_detail=todo.get("detail", ""),
+                        premises=premises,
+                        model=model,
+                    ),
+                    timeout=30,
+                )
+                return {"todo_id": todo["id"], **result}
+            except (json.JSONDecodeError, ValueError):
+                if attempt >= 2:
+                    return {"todo_id": todo["id"], **ANALYSIS_FALLBACK}
+            except asyncio.TimeoutError:
+                if attempt >= 2:
+                    return {"todo_id": todo["id"], **ANALYSIS_FALLBACK}
+            except Exception:
+                if attempt >= 2:
+                    return {"todo_id": todo["id"], **ANALYSIS_FALLBACK}
+
+        return {"todo_id": todo["id"], **ANALYSIS_FALLBACK}
 
     results = []
     for i in range(0, len(todos), 5):

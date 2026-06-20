@@ -3,6 +3,7 @@ import os
 import secrets
 import httpx
 from datetime import datetime, timedelta
+from typing import Optional
 
 import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -17,6 +18,8 @@ GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET", "")
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8000")
 SESSION_TTL_HOURS = 72
+STATE_TTL = timedelta(minutes=5)
+_state_store: dict[str, datetime] = {}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────
@@ -45,6 +48,27 @@ async def get_current_user(
     return dict(row)
 
 
+def _cleanup_expired_states(now: datetime | None = None) -> None:
+    """Remove expired OAuth states from memory."""
+    current_time = now or datetime.utcnow()
+    expired_states = [state for state, expires_at in _state_store.items() if expires_at <= current_time]
+    for state in expired_states:
+        _state_store.pop(state, None)
+
+
+def _validate_oauth_state(state: Optional[str]) -> None:
+    """Validate OAuth state token and consume it."""
+    now = datetime.utcnow()
+    _cleanup_expired_states(now)
+
+    if not state:
+        raise HTTPException(status_code=400, detail="Invalid state")
+
+    expires_at = _state_store.pop(state, None)
+    if not expires_at or expires_at <= now:
+        raise HTTPException(status_code=400, detail="Invalid state")
+
+
 # ── Routes ────────────────────────────────────────────────────────────────
 
 CALLBACK_URL = os.getenv(
@@ -58,6 +82,8 @@ async def github_login():
     if not GITHUB_CLIENT_ID:
         raise HTTPException(status_code=503, detail="GitHub OAuth not configured")
     state = secrets.token_urlsafe(16)
+    _cleanup_expired_states()
+    _state_store[state] = datetime.utcnow() + STATE_TTL
     url = (
         f"https://github.com/login/oauth/authorize"
         f"?client_id={GITHUB_CLIENT_ID}"
@@ -71,9 +97,12 @@ async def github_login():
 @router.get("/github/callback")
 async def github_callback(
     code: str,
+    state: Optional[str] = None,
     db: aiosqlite.Connection = Depends(get_db),
 ):
     """Handle GitHub OAuth callback, create/update user, return session."""
+    _validate_oauth_state(state)
+
     # Exchange code for access token
     async with httpx.AsyncClient() as client:
         token_res = await client.post(

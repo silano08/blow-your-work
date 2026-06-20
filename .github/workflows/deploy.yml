@@ -54,7 +54,10 @@ jobs:
               --set-env-vars \
                 GITHUB_TOKEN="${{ secrets.GH_TOKEN }}" \
                 GITHUB_CLIENT_ID="${{ secrets.GH_CLIENT_ID }}" \
-                GITHUB_CLIENT_SECRET="${{ secrets.GH_CLIENT_SECRET }}"
+                GITHUB_CLIENT_SECRET="${{ secrets.GH_CLIENT_SECRET }}" \
+                AZURE_OPENAI_ENDPOINT="${{ secrets.AZURE_OPENAI_ENDPOINT }}" \
+                AZURE_OPENAI_API_KEY="${{ secrets.AZURE_OPENAI_API_KEY }}" \
+                AZURE_OPENAI_DEPLOYMENT="gpt-4o"
           else
             az containerapp create \
               --name $ACA_NAME \
@@ -71,7 +74,10 @@ jobs:
               --env-vars \
                 GITHUB_TOKEN="${{ secrets.GH_TOKEN }}" \
                 GITHUB_CLIENT_ID="${{ secrets.GH_CLIENT_ID }}" \
-                GITHUB_CLIENT_SECRET="${{ secrets.GH_CLIENT_SECRET }}"
+                GITHUB_CLIENT_SECRET="${{ secrets.GH_CLIENT_SECRET }}" \
+                AZURE_OPENAI_ENDPOINT="${{ secrets.AZURE_OPENAI_ENDPOINT }}" \
+                AZURE_OPENAI_API_KEY="${{ secrets.AZURE_OPENAI_API_KEY }}" \
+                AZURE_OPENAI_DEPLOYMENT="gpt-4o"
           fi
 
           # FQDN 출력

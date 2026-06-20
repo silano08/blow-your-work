@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from app.database import get_db
+from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/ai", tags=["ai-audit"])
 
@@ -36,6 +37,7 @@ class HitlSettings(BaseModel):
 async def list_decisions(
     status: Optional[str] = None,
     db: aiosqlite.Connection = Depends(get_db),
+    _: dict = Depends(get_current_user),
 ):
     """Return all AI decisions, optionally filtered by status."""
     if status:
@@ -55,7 +57,10 @@ async def list_decisions(
 
 
 @router.get("/decisions/stats")
-async def decision_stats(db: aiosqlite.Connection = Depends(get_db)):
+async def decision_stats(
+    db: aiosqlite.Connection = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
     """Summary counts for admin panel."""
     rows = await (
         await db.execute(
@@ -79,6 +84,7 @@ async def review_decision(
     decision_id: int,
     body: ReviewRequest,
     db: aiosqlite.Connection = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Human review: approve / flag / override an AI decision."""
     row = await (
@@ -96,7 +102,7 @@ async def review_decision(
            WHERE id = ?""",
         (
             body.status,
-            body.review_by,
+            current_user.get("name") or current_user.get("username") or body.review_by,
             body.override_reason,
             body.override_output,
             datetime.utcnow().isoformat(),
@@ -110,7 +116,10 @@ async def review_decision(
 # ── HITL Settings ────────────────────────────────────────────────────────────
 
 @router.get("/hitl-settings")
-async def get_hitl_settings(db: aiosqlite.Connection = Depends(get_db)):
+async def get_hitl_settings(
+    db: aiosqlite.Connection = Depends(get_db),
+    _: dict = Depends(get_current_user),
+):
     """Return current HITL admin configuration."""
     rows = await (
         await db.execute("SELECT key, value FROM hitl_settings")
@@ -122,8 +131,12 @@ async def get_hitl_settings(db: aiosqlite.Connection = Depends(get_db)):
 async def update_hitl_settings(
     body: HitlSettings,
     db: aiosqlite.Connection = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
 ):
     """Overwrite HITL settings (admin only)."""
+    if current_user.get("role") != "leader":
+        raise HTTPException(status_code=403, detail="Leader role required")
+
     now = datetime.utcnow().isoformat()
     updates = [
         ("auto_approve_enabled",  "1" if body.auto_approve_enabled else "0"),

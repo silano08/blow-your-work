@@ -1117,7 +1117,7 @@ function renderHome() {
             </div>
             <div style="font-size:11px;color:var(--text-03)">${doneCount}/${total} 완료 · ${donePct}%</div>
           </div>
-          <button onclick="triggerAnalysis()"
+          <button id="btn-trigger-analysis" onclick="triggerAnalysis()"
             style="background:var(--purple-bg);color:var(--purple);border:none;border-radius:6px;
                    padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;min-height:32px">
             ⚡ AI 분석
@@ -1289,6 +1289,8 @@ async function deleteTodo(id) {
 }
 
 async function triggerAnalysis() {
+  const btn = document.getElementById('btn-trigger-analysis');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 분석 중...'; }
   showToast('⚡ AI 분석 중...');
 
   // 비 데모 모드: 실제 Copilot SDK API 호출
@@ -1301,14 +1303,20 @@ async function triggerAnalysis() {
       });
       if (res.ok) {
         const data = await res.json();
-        // 서버 분석 결과 todos에 반영
         const r2 = await fetch(`${API}/daily-todos?date=${new Date().toISOString().slice(0,10)}`, { credentials: 'include' });
         if (r2.ok) { todos = await r2.json(); }
         renderHome();
         showToast(`✨ AI 분석 완료! (${data.analyzed}건)`);
-        return;
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(`❌ 분석 실패: ${err.detail || res.status}`);
       }
-    } catch (_) {}
+    } catch (e) {
+      showToast('❌ 분석 중 오류가 발생했어요. 다시 시도해주세요.');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '⚡ AI 분석'; }
+    }
+    return;
   }
 
   // 데모 모드: 팀 전제 키워드 기반 스마트 매칭
