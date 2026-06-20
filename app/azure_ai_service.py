@@ -11,10 +11,13 @@ Copilot SDK 는 Todo ↔ 전제 기여도 분석에 사용하고,
 from __future__ import annotations
 
 import json
+import logging
 import os
 import re
 
 import httpx
+
+logger = logging.getLogger("taskwave.azure_ai")
 
 ENDPOINT    = os.getenv("AZURE_OPENAI_ENDPOINT", "").rstrip("/")
 API_KEY     = os.getenv("AZURE_OPENAI_API_KEY", "")
@@ -41,13 +44,15 @@ Rules:
 - No more than 4 items"""
 
 
-async def suggest_team_todos(team_id: int, premises: list[dict]) -> list[dict]:
+async def suggest_team_todos(team_id: int, premises: list[dict]) -> tuple[list[dict], str]:
     """Azure OpenAI 로 팀 전제 기반 오늘 할일 4개를 추천합니다.
 
-    Azure 환경변수 미설정 시 빠른 폴백 응답을 반환합니다.
+    Returns:
+        (suggestions, source) — source: "azure_openai" | "fallback"
     """
     if not ENDPOINT or not API_KEY:
-        return _fallback_suggestions(premises)
+        logger.info("Azure OpenAI not configured, using fallback for team %d", team_id)
+        return _fallback_suggestions(premises), "fallback"
 
     premises_text = "\n".join(
         f"[id={p['id']}, type={p['type']}] {p['title']}"
@@ -70,20 +75,26 @@ async def suggest_team_todos(team_id: int, premises: list[dict]) -> list[dict]:
         "temperature": 0.7,
     }
 
-    async with httpx.AsyncClient(timeout=12) as client:
-        resp = await client.post(url, headers=headers, json=body)
-        resp.raise_for_status()
-        content = resp.json()["choices"][0]["message"]["content"].strip()
+    try:
+        async with httpx.AsyncClient(timeout=12) as client:
+            resp = await client.post(url, headers=headers, json=body)
+            resp.raise_for_status()
+            content = resp.json()["choices"][0]["message"]["content"].strip()
 
-    m = re.search(r"\[.*\]", content, re.DOTALL)
-    if not m:
-        return _fallback_suggestions(premises)
-    return json.loads(m.group())
+        m = re.search(r"\[.*\]", content, re.DOTALL)
+        if not m:
+            logger.warning("Azure OpenAI returned unexpected format, falling back")
+            return _fallback_suggestions(premises), "fallback"
+
+        logger.info("Azure OpenAI suggest success for team %d", team_id)
+        return json.loads(m.group()), "azure_openai"
+    except Exception as e:
+        logger.error("Azure OpenAI suggest failed: %s, falling back", e)
+        return _fallback_suggestions(premises), "fallback"
 
 
 def _fallback_suggestions(premises: list[dict]) -> list[dict]:
     """Azure 미설정 시 전제 기반 규칙형 추천."""
-    # DB 구버전 grand/small → initiative/goal 매핑
     type_map = {"grand": "initiative", "initiative": "initiative",
                 "small": "goal", "goal": "goal"}
     active = [p for p in premises if p.get("is_active")]

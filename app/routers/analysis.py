@@ -1,10 +1,14 @@
 """Todo × 전제 AI 기여도 분석 엔드포인트."""
+import asyncio
+import json
+
 import aiosqlite
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi.responses import StreamingResponse
 
 from app.database import get_db
 from app.models import AnalysisTriggerResponse
-from app.copilot_service import analyze_todos_batch
+from app.copilot_service import analyze_todo_premise, analyze_todos_batch
 from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/analysis", tags=["analysis"])
@@ -81,6 +85,78 @@ async def _run_analysis(db: aiosqlite.Connection, todo_ids: list[int] | None = N
     return len(results)
 
 
+async def _stream_analysis(current_user: dict, db: aiosqlite.Connection) -> StreamingResponse:
+    """SSE 스트리밍으로 분석 진행 상황을 실시간 전송."""
+
+    async def event_generator():
+        todos_rows = await (
+            await db.execute(
+                """SELECT dt.id, dt.title, dt.detail
+                   FROM daily_todos dt
+                   WHERE dt.todo_date = date('now')
+                   AND NOT EXISTS (
+                       SELECT 1 FROM todo_analysis ta WHERE ta.todo_id = dt.id
+                   )"""
+            )
+        ).fetchall()
+        todos = [dict(r) for r in todos_rows]
+
+        if not todos:
+            yield f"data: {json.dumps({'type': 'done', 'analyzed': 0, 'message': '분석할 Todo가 없습니다'}, ensure_ascii=False)}\n\n"
+            return
+
+        premises_rows = await (
+            await db.execute("SELECT id, type, title, description FROM premises WHERE is_active=1")
+        ).fetchall()
+        premises = [dict(r) for r in premises_rows]
+
+        yield f"data: {json.dumps({'type': 'start', 'total': len(todos)}, ensure_ascii=False)}\n\n"
+
+        analyzed = 0
+        for todo in todos:
+            yield (
+                f"data: {json.dumps({'type': 'progress', 'todo_id': todo['id'], 'title': todo['title'], 'current': analyzed + 1, 'total': len(todos)}, ensure_ascii=False)}\n\n"
+            )
+
+            try:
+                result = await asyncio.wait_for(
+                    analyze_todo_premise(todo["title"], todo.get("detail", ""), premises),
+                    timeout=30,
+                )
+                relation = _normalize_relation(result.get("relation"))
+
+                await db.execute("DELETE FROM todo_analysis WHERE todo_id=?", (todo["id"],))
+                await db.execute(
+                    """INSERT INTO todo_analysis
+                       (todo_id, premise_id, relation, confidence, reason)
+                       VALUES (?,?,?,?,?)""",
+                    (
+                        todo["id"],
+                        result.get("premise_id"),
+                        relation,
+                        result.get("confidence", 0.0),
+                        result.get("reason", ""),
+                    ),
+                )
+                await db.commit()
+                analyzed += 1
+                yield (
+                    f"data: {json.dumps({'type': 'result', 'todo_id': todo['id'], 'relation': relation, 'confidence': result.get('confidence', 0.0), 'reason': result.get('reason', '')}, ensure_ascii=False)}\n\n"
+                )
+            except Exception as e:
+                yield (
+                    f"data: {json.dumps({'type': 'error', 'todo_id': todo['id'], 'message': str(e)[:100]}, ensure_ascii=False)}\n\n"
+                )
+
+        yield f"data: {json.dumps({'type': 'done', 'analyzed': analyzed}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
 @router.post("/trigger", response_model=AnalysisTriggerResponse)
 async def trigger_analysis(
     background_tasks: BackgroundTasks,
@@ -102,6 +178,24 @@ async def trigger_analysis(
         message=f"AI 분석 완료",
         analyzed=count,
     )
+
+
+@router.post("/trigger/stream")
+async def trigger_analysis_stream(
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    """POST 호환 SSE 분석 스트리밍 엔드포인트."""
+    return await _stream_analysis(current_user, db)
+
+
+@router.get("/trigger/stream")
+async def trigger_analysis_stream_get(
+    current_user: dict = Depends(get_current_user),
+    db: aiosqlite.Connection = Depends(get_db),
+):
+    """EventSource 호환 SSE 분석 스트리밍 엔드포인트."""
+    return await _stream_analysis(current_user, db)
 
 
 @router.post("/trigger-one/{todo_id}", response_model=AnalysisTriggerResponse)

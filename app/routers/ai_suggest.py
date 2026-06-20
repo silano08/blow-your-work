@@ -28,10 +28,12 @@ async def suggest_todos(
     ).fetchall()
     premises = [dict(r) for r in rows]
 
-    suggestions = await suggest_team_todos(team_id, premises)
+    suggestions, source = await suggest_team_todos(team_id, premises)
     return {
         "team_id": team_id,
-        "model": "azure-openai/gpt-4o",
+        "model": "azure-openai/gpt-4o" if source == "azure_openai" else "rule-based-fallback",
+        "source": source,
+        "azure_openai_active": source == "azure_openai",
         "suggestions": suggestions,
         "count": len(suggestions),
     }

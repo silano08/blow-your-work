@@ -1289,37 +1289,64 @@ async function deleteTodo(id) {
 }
 
 async function triggerAnalysis() {
-  const btn = document.getElementById('btn-trigger-analysis');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ 분석 중...'; }
-  showToast('⚡ AI 분석 중...');
-
   // 비 데모 모드: 실제 Copilot SDK API 호출
   if (!IS_DEMO) {
+    const btn = document.getElementById('btn-trigger-analysis');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ 분석 중...'; }
+    showToast('⚡ AI 분석 중...');
+
     try {
-      const res = await fetch(`${API}/analysis/trigger`, {
-        method: 'POST', credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(null),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const r2 = await fetch(`${API}/daily-todos?date=${new Date().toISOString().slice(0,10)}`, { credentials: 'include' });
-        if (r2.ok) { todos = await r2.json(); }
-        renderHome();
-        showToast(`✨ AI 분석 완료! (${data.analyzed}건)`);
-      } else {
-        const err = await res.json().catch(() => ({}));
-        showToast(`❌ 분석 실패: ${err.detail || res.status}`);
-      }
+      const existingProgress = document.getElementById('analysis-progress');
+      if (existingProgress) existingProgress.remove();
+
+      const progressEl = document.createElement('div');
+      progressEl.id = 'analysis-progress';
+      progressEl.style.cssText = 'position:fixed;bottom:80px;right:20px;background:var(--bg-01);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:12px;max-width:280px;z-index:999;box-shadow:var(--shadow-lg)';
+      document.body.appendChild(progressEl);
+
+      const es = new EventSource(`${API}/analysis/trigger/stream`, {withCredentials: true});
+
+      es.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.type === 'start') {
+          progressEl.innerHTML = `🔍 <b>AI 분석 시작</b> — ${data.total}개 항목`;
+        } else if (data.type === 'progress') {
+          progressEl.innerHTML = `⚡ 분석 중 (${data.current}/${data.total})<br><span style="color:var(--text-03)">${data.title}</span>`;
+        } else if (data.type === 'result') {
+          const icon = data.relation === 'none' ? '⚪' : data.relation === 'goal' ? '🎯' : '🚀';
+          progressEl.innerHTML = `${icon} <b>${data.relation}</b> <span style="color:var(--text-03)">(${Math.round(data.confidence*100)}%)</span><br><span style="font-size:11px;color:var(--text-03)">${data.reason?.slice(0,60)}...</span>`;
+        } else if (data.type === 'done') {
+          es.close();
+          progressEl.remove();
+          if (btn) { btn.disabled = false; btn.textContent = '⚡ AI 분석'; }
+          fetch(`${API}/daily-todos?date=${new Date().toISOString().slice(0,10)}`, {credentials:'include'})
+            .then(r => r.ok ? r.json() : null)
+            .then(d => { if (d) { todos = d; renderHome(); } });
+          showToast(`✨ AI 분석 완료! (${data.analyzed}건)`);
+        } else if (data.type === 'error') {
+          progressEl.innerHTML = `❌ 분석 오류: ${data.message}`;
+        }
+      };
+
+      es.onerror = () => {
+        es.close();
+        document.getElementById('analysis-progress')?.remove();
+        if (btn) { btn.disabled = false; btn.textContent = '⚡ AI 분석'; }
+        showToast('❌ 분석 중 연결 오류가 발생했어요');
+      };
+
+      return;
     } catch (e) {
-      showToast('❌ 분석 중 오류가 발생했어요. 다시 시도해주세요.');
-    } finally {
       if (btn) { btn.disabled = false; btn.textContent = '⚡ AI 분석'; }
+      showToast('❌ 분석 중 오류가 발생했어요');
+      return;
     }
-    return;
   }
 
   // 데모 모드: 팀 전제 키워드 기반 스마트 매칭
+  const btn = document.getElementById('btn-trigger-analysis');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 분석 중...'; }
+  showToast('⚡ AI 분석 중...');
   const teamPremises = (DEMO_PREMISES[currentUser?.team_id] || []).filter(p => p.is_active);
   const initiatives  = teamPremises.filter(p => p.type === 'initiative');
   const goals        = teamPremises.filter(p => p.type === 'goal');
@@ -1374,6 +1401,7 @@ async function triggerAnalysis() {
       t.analysis = { relation: bestType, confidence: parseFloat(bestConfidence.toFixed(2)), premise_id: bestPremiseId };
     });
     renderHome();
+    if (btn) { btn.disabled = false; btn.textContent = '⚡ AI 분석'; }
     showToast(`✨ AI 분석 완료! (${todos.length}건 → 미분류 최소화)`);
   }, 1200);
 }
